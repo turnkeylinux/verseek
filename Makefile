@@ -1,5 +1,5 @@
 # standard Python project Makefile
-progname=sourceversion
+progname=verseek
 name=
 
 prefix=/usr/local
