@@ -18,7 +18,9 @@
 <v t="zaril.20101001201018.3" a="E"><vh>implementation</vh>
 <v t="zaril.20101001204645"><vh>cli stubs</vh></v>
 <v t="zaril.20101001204243" a="E"><vh>setup tests</vh></v>
-<v t="zaril.20101001204304" a="ETV"><vh>support latest version in all types</vh></v>
+<v t="zaril.20101001204304" a="E"><vh>support latest version in all types</vh>
+<v t="zaril.20101001204304.1" a="TV"><vh>regular</vh></v>
+</v>
 </v>
 </v>
 <v t="zaril.20101001200109.1"><vh>bugs/wishlist</vh></v>
@@ -108,10 +110,13 @@ REMINDERS:
         creates a new changelog according to template
 
 </t>
-<t tx="zaril.20101001204304">regular
-tagged
+<t tx="zaril.20101001204304">tagged
 multi-git
 multi-sumo</t>
+<t tx="zaril.20101001204304.1">list logic
+    print the latest version in path
+
+    </t>
 <t tx="zaril.20101001204645"></t>
 </tnodes>
 </leo_file>
