@@ -13,13 +13,15 @@
 <v t="zaril.20101001201018" a="E"><vh>development log</vh>
 <v t="zaril.20101001195902.1" a="E"><vh>design</vh>
 <v t="zaril.20101001195902.2" a="E"><vh>brainstorming</vh></v>
+<v t="zaril.20101001233547"><vh>terminology</vh></v>
 <v t="zaril.20101001195902.5"><vh>cli syntax and logic</vh></v>
 </v>
 <v t="zaril.20101001201018.3" a="E"><vh>implementation</vh>
 <v t="zaril.20101001204645"><vh>cli stubs</vh></v>
 <v t="zaril.20101001204243" a="E"><vh>setup tests</vh></v>
 <v t="zaril.20101001204304" a="E"><vh>support latest version in all types</vh>
-<v t="zaril.20101001204304.1" a="TV"><vh>regular</vh></v>
+<v t="zaril.20101001204304.1"><vh>plain</vh></v>
+<v t="zaril.20101001204903" a="TV"><vh>git single</vh></v>
 </v>
 </v>
 </v>
@@ -97,10 +99,10 @@ roadmap/milestones
                 develop commit hooks                
 
 </t>
-<t tx="zaril.20101001204243">+ regular
-+ tagged
-+ multi-git
-+ multi-sumo
+<t tx="zaril.20101001204243">+ plain
++ git single
++ git
++ sumo
 
 REMINDERS: 
     dpkg-parsechangelog
@@ -110,13 +112,38 @@ REMINDERS:
         creates a new changelog according to template
 
 </t>
-<t tx="zaril.20101001204304">tagged
-multi-git
+<t tx="zaril.20101001204304">multi-git
 multi-sumo</t>
 <t tx="zaril.20101001204304.1">list logic
     print the latest version in path
 
     </t>
 <t tx="zaril.20101001204645"></t>
+<t tx="zaril.20101001204903">detect logic
+    single debian project in Git repository
+
+list logic
+    calculate version (same way scripts/version.sh) does it
+
+seek logic
+    verify version
+    create changelog
+
+    
+        
+    </t>
+<t tx="zaril.20101001233547">storage types
+    git single
+        git repository containing one single package
+
+    git
+        git repository containing multiple packages
+
+    plain
+        regular directory containing multiple packages
+
+    sumo
+        sumo arena containing multiple packages
+</t>
 </tnodes>
 </leo_file>
