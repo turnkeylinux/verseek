@@ -2,8 +2,8 @@
 <?xml-stylesheet ekr_test?>
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="51" clone_windows="0"/>
-<globals body_outline_ratio="0.5">
-	<global_window_position top="0" left="449" height="933" width="800"/>
+<globals body_outline_ratio="0.378349410504">
+	<global_window_position top="0" left="470" height="933" width="800"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -62,7 +62,13 @@ source types
 cli syntax
     sourceversion-list path
     sourceversion-seek path [ version ]</t>
-<t tx="zaril.20101001195902.5">operations
+<t tx="zaril.20101001195902.5">=== ENVIRONMENT
+
+RELEASE (what release to specify in changelog)
+
+=== CLI
+
+operations
     list path -&gt; versions
     seek path [ version ]
 
@@ -78,6 +84,7 @@ verseek path [ version ]
         else:
             restores version prior to seek
                 raises error if no seek in progress
+
 
 </t>
 <t tx="zaril.20101001200109.1"></t>
@@ -120,7 +127,11 @@ multi-sumo</t>
     </t>
 <t tx="zaril.20101001204645"></t>
 <t tx="zaril.20101001204903">detect logic
-    single debian project in Git repository
+    single debian project in Git repositorycd p
+
+calculate version logic
+    git-describe commit
+    if not, create an untagged autoversion    
 
 list logic
     calculate version (same way scripts/version.sh) does it
@@ -129,9 +140,23 @@ seek logic
     verify version
     create changelog
 
+
+Q: how do we decide what the release for the changelog is?
+A: 
+    hardwired default
+    environment variable
+        RELEASE
+    cli?
+        nah, would just complicate matters
+
+SCRATCH
+    git-rev-list
+
+Q: whats the format of the time in the changelog?
+A: RFC822
     
-        
-    </t>
+	strftime("%a, %d %b %Y %H:%M:%S +0000")
+</t>
 <t tx="zaril.20101001233547">storage types
     git single
         git repository containing one single package

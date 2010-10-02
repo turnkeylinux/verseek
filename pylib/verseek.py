@@ -1,5 +1,9 @@
-import re
 from os.path import *
+
+import os
+import re
+import datetime
+import subprocess
 
 class Error(Exception):
     pass
@@ -17,13 +21,11 @@ def deb_get_version(srcpath):
 
     raise Error("can't parse version from `%s'" % changelogfile)
 
-
-    
 def get_git_root(dir):
     """Walk up dir to get the gitdir.
     Return None if we're not in a repository"""
     dir = abspath(dir)
-    
+
     subdir = None
     while True:
         if isdir(join(dir, ".git")):
@@ -34,12 +36,35 @@ def get_git_root(dir):
         if dir == '/':
             return None
 
+def getoutput(*command):
+    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p.wait()
+
+    if p.returncode:
+        raise Error("command `%s' failed" % " ".join(command))
+
+    return p.stdout.read().rstrip("\n")
+
 class Base:
     """version seeking base class"""
+    @staticmethod
+    def _parse_control(path):
+        return dict([ re.split("\s*:\s+", line.strip(), 1)
+                      for line in file(path).readlines()
+                      if line.strip() and not line.startswith(" ") ])
+
     def __init__(self, path):
         if not isdir(path):
             raise Error("no such directory `%s'" % path)
+
         self.path = path
+        self.path_changelog = join(self.path, "debian/changelog")
+        self.path_control = join(self.path, "debian/control")
+
+        if not exists(self.path_control):
+            raise Error("missing debian/control file `%s'" % self.path_control)
+
+        self.control = self._parse_control(self.path_control)
     
     def list(self):
         return []
@@ -56,22 +81,70 @@ class Plain(Base):
         if version and deb_get_version(path) != version:
             raise Error("can't seek to nonexistent version `%s'" % version)
 
-
 class Git(Base):
     """version seeking class for git"""
+    def __init__(self, path):
+        Base.__init__(self, path)
+        self.gitroot = get_git_root(path)
+        
     def list(self):
         return []
 
     def seek(self, version=None):
         pass
 
-class GitSingle(Base):
+class GitSingle(Git):
     """version seeking class for git repository containing one package"""
-    def list(self):
-        return []
+    def _get_autoversion(self, commit):
+        orig_cwd = os.getcwd()
 
+        os.chdir(self.path)
+        version = getoutput("autoversion", commit)
+        os.chdir(orig_cwd)
+
+        return version
+
+    def _get_autoversion_datetime(self, version):
+        orig_cwd = os.getcwd()
+
+        os.chdir(self.path)
+        commit = getoutput("autoversion", "-r", version)
+        
+        output = getoutput("git-cat-file", "commit", commit)
+        timestamp = int(re.search(r' (\d{10}) ', output).group(1))
+        dt = datetime.datetime.fromtimestamp(timestamp)
+        
+        os.chdir(orig_cwd)
+
+        return dt
+    
+    def _create_changelog(self, version):
+        release = os.environ.get("RELEASE") or "UNRELEASED"
+        dt = self._get_autoversion_datetime(version)
+        
+        fh = file(self.path_changelog, "w")
+        print >> fh, "%s (%s) %s; urgency=low" % (self.control['Source'],
+                                                  version,
+                                                  release)
+        print >> fh
+        print >> fh, "  * auto-generated changelog entry"
+        print >> fh
+        print >> fh, " -- %s %s" % (self.control['Maintainer'],
+                                    dt.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+        fh.close()
+        
     def seek(self, version=None):
-        pass
+        if not version:
+            if exists(self.path_changelog):
+                os.remove(self.path_changelog)
+        else:
+            if version != self._get_autoversion("HEAD"):
+                raise Error("no such version `%s'" % version)
+
+            self._create_changelog(version)
+            
+    def list(self):
+        return [ self._get_autoversion("HEAD") ]
 
 class Sumo(Base):
     """version seeking class for Sumo storage type"""
