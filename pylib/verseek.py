@@ -81,17 +81,8 @@ class Plain(Base):
         if version and deb_get_version(path) != version:
             raise Error("can't seek to nonexistent version `%s'" % version)
 
-class Git(Base):
+class Git(Plain):
     """version seeking class for git"""
-    def __init__(self, path):
-        Base.__init__(self, path)
-        self.gitroot = get_git_root(path)
-        
-    def list(self):
-        return []
-
-    def seek(self, version=None):
-        pass
 
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
@@ -146,13 +137,8 @@ class GitSingle(Git):
     def list(self):
         return [ self._get_autoversion("HEAD") ]
 
-class Sumo(Base):
+class Sumo(Plain):
     """version seeking class for Sumo storage type"""
-    def list(self):
-        return []
-
-    def seek(self, version=None):
-        pass
 
 def new(path):
     """Return  instance appropriate for path"""

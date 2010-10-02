@@ -21,7 +21,8 @@
 <v t="zaril.20101001204243" a="E"><vh>setup tests</vh></v>
 <v t="zaril.20101001204304" a="E"><vh>support latest version in all types</vh>
 <v t="zaril.20101001204304.1"><vh>plain</vh></v>
-<v t="zaril.20101001204903" a="TV"><vh>git single</vh></v>
+<v t="zaril.20101001204903"><vh>git single</vh></v>
+<v t="zaril.20101002071459" a="TV"><vh>git</vh></v>
 </v>
 </v>
 </v>
@@ -170,5 +171,6 @@ A: RFC822
     sumo
         sumo arena containing multiple packages
 </t>
+<t tx="zaril.20101002071459"></t>
 </tnodes>
 </leo_file>
