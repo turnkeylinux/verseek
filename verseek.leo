@@ -3,7 +3,7 @@
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="51" clone_windows="0"/>
 <globals body_outline_ratio="0.378349410504">
-	<global_window_position top="0" left="470" height="933" width="800"/>
+	<global_window_position top="0" left="17" height="933" width="800"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -22,8 +22,9 @@
 <v t="zaril.20101001204304" a="E"><vh>support latest version in all types</vh>
 <v t="zaril.20101001204304.1"><vh>plain</vh></v>
 <v t="zaril.20101001204903"><vh>git single</vh></v>
-<v t="zaril.20101002071459" a="TV"><vh>git</vh></v>
+<v t="zaril.20101002071459"><vh>git</vh></v>
 </v>
+<v t="zaril.20101005103427" a="TV"><vh>bug: badly formatted changelog</vh></v>
 </v>
 </v>
 <v t="zaril.20101001200109.1"><vh>bugs/wishlist</vh></v>
@@ -172,5 +173,9 @@ A: RFC822
         sumo arena containing multiple packages
 </t>
 <t tx="zaril.20101002071459"></t>
+<t tx="zaril.20101005103427">test: dpkg-parsechangelog
+
+parsechangelog/debian: error: badly formatted trailer line, at file debian/changelog line 5
+</t>
 </tnodes>
 </leo_file>

@@ -120,8 +120,8 @@ class GitSingle(Git):
         print >> fh
         print >> fh, "  * auto-generated changelog entry"
         print >> fh
-        print >> fh, " -- %s %s" % (self.control['Maintainer'],
-                                    dt.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+        print >> fh, " --  %s  %s" % (self.control['Maintainer'],
+                                      dt.strftime("%a, %d %b %Y %H:%M:%S +0000"))
         fh.close()
         
     def seek(self, version=None):
