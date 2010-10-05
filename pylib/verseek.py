@@ -78,7 +78,7 @@ class Plain(Base):
         return [ deb_get_version(self.path) ]
 
     def seek(self, version=None):
-        if version and deb_get_version(path) != version:
+        if version and deb_get_version(self.path) != version:
             raise Error("can't seek to nonexistent version `%s'" % version)
 
 class Git(Plain):
