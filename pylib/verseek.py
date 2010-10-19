@@ -5,10 +5,20 @@ import re
 import datetime
 import commands
 
-from utils import getoutput
+from subprocess import *
 
 class Error(Exception):
     pass
+
+def getoutput(*command):
+    """executes command and returns stdout output on success, None on error."""
+    p = Popen(command, stdout=PIPE, stderr=PIPE)
+    output = p.communicate()[0]
+
+    if p.returncode:
+        return None
+
+    return output.rstrip("\n")
 
 def deb_get_version(srcpath):
     changelogfile = join(srcpath, "debian/changelog")
