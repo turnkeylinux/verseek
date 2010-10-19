@@ -6,7 +6,6 @@ import datetime
 import commands
 
 from utils import getoutput
-import autoversion
 
 class Error(Exception):
     pass
@@ -159,8 +158,8 @@ class GitSingle(Git):
             self.verseek_head = None
         else:
             try:
-                commit = autoversion.version2commit(self.path, version)
-            except autoversion.Error:
+                commit = self._getoutput("autoversion", "-r", version)
+            except Error:
                 raise Error("no such version `%s'" % version)
 
             if not self.verseek_head:
@@ -170,7 +169,8 @@ class GitSingle(Git):
             self._create_changelog(version, self._get_commit_datetime(commit))
             
     def list(self):
-        return autoversion.get_all_versions(self.path)
+        commits = self._getoutput("git-rev-list", "--all").split("\n")
+        return self._getoutput("autoversion", *commits).split("\n")
 
 class Sumo(Plain):
     """version seeking class for Sumo storage type"""
