@@ -3,7 +3,10 @@ from os.path import *
 import os
 import re
 import datetime
-import subprocess
+import commands
+
+from utils import getoutput
+import autoversion
 
 class Error(Exception):
     pass
@@ -36,16 +39,7 @@ def get_git_root(dir):
         if dir == '/':
             return None
 
-def getoutput(*command):
-    p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
-
-    if p.returncode:
-        raise Error("command `%s' failed" % " ".join(command))
-
-    return p.stdout.read().rstrip("\n")
-
-class Base:
+class Base(object):
     """version seeking base class"""
     @staticmethod
     def _parse_control(path):
@@ -86,32 +80,61 @@ class Git(Plain):
 
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
-    def _get_autoversion(self, commit):
-        orig_cwd = os.getcwd()
+    class Head(object):
+        ref = "HEAD"
+        def __get__(self, obj, type):
+            try:
+                return obj._getoutput("git-symbolic-ref", self.ref)
+            except Error:
+                raise Error("HEAD isn't pointing to a branch")
 
-        os.chdir(self.path)
-        version = getoutput("autoversion", commit)
-        os.chdir(orig_cwd)
+    class VerseekHead(object):
+        ref = "VERSEEK_HEAD"
+        def __get__(self, obj, type):
+            try:
+                return obj._getoutput("git-symbolic-ref", self.ref)
+            except Error:
+                return None
 
-        return version
+        def __set__(self, obj, val):
+            if val is None:
+                ref_path = join(obj.path, ".git", self.ref)
+                if exists(ref_path):
+                    os.remove(ref_path)
+            else:
+                obj._getoutput("git-symbolic-ref", self.ref, val)
 
-    def _get_autoversion_datetime(self, version):
-        orig_cwd = os.getcwd()
-
-        os.chdir(self.path)
-        commit = getoutput("autoversion", "-r", version)
-        
-        output = getoutput("git-cat-file", "commit", commit)
-        timestamp = int(re.search(r' (\d{10}) ', output).group(1))
-        dt = datetime.datetime.fromtimestamp(timestamp)
-        
-        os.chdir(orig_cwd)
-
-        return dt
+    verseek_head = VerseekHead()
+    head = Head()
     
-    def _create_changelog(self, version):
+    def _system(self, command, *args):
+        orig_cwd = os.getcwd()
+        os.chdir(self.path)
+        command = command + " " + " ".join([commands.mkarg(arg) for arg in args])
+        err = os.system(command)
+        os.chdir(orig_cwd)
+        if err:
+            raise Error("command failed: " + command,
+                        os.WEXITSTATUS(err))
+
+    def _getoutput(self, *command):
+        orig_cwd = os.getcwd()
+        os.chdir(self.path)
+        output = getoutput(*command)
+        os.chdir(orig_cwd)
+
+        if output is None:
+            raise Error("command failed: `%s'" % " ".join(command))
+            
+        return output
+
+    def _get_commit_datetime(self, commit):
+        output = self._getoutput("git-cat-file", "commit", commit)
+        timestamp = int(re.search(r' (\d{10}) ', output).group(1))
+        return datetime.datetime.fromtimestamp(timestamp)
+
+    def _create_changelog(self, version, datetime):
         release = os.environ.get("RELEASE") or "UNRELEASED"
-        dt = self._get_autoversion_datetime(version)
         
         fh = file(self.path_changelog, "w")
         print >> fh, "%s (%s) %s; urgency=low" % (self.control['Source'],
@@ -121,21 +144,33 @@ class GitSingle(Git):
         print >> fh, "  * auto-generated changelog entry"
         print >> fh
         print >> fh, " --  %s  %s" % (self.control['Maintainer'],
-                                      dt.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+                                      datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
         fh.close()
-        
+
     def seek(self, version=None):
         if not version:
             if exists(self.path_changelog):
                 os.remove(self.path_changelog)
+
+            if not self.verseek_head:
+                raise Error("no version to seek back to")
+            
+            self._system("git-checkout -q -f", basename(self.verseek_head))
+            self.verseek_head = None
         else:
-            if version != self._get_autoversion("HEAD"):
+            try:
+                commit = autoversion.version2commit(self.path, version)
+            except autoversion.Error:
                 raise Error("no such version `%s'" % version)
 
-            self._create_changelog(version)
+            if not self.verseek_head:
+                self.verseek_head = self.head
+
+            self._system("git-checkout -q -f", commit)
+            self._create_changelog(version, self._get_commit_datetime(commit))
             
     def list(self):
-        return [ self._get_autoversion("HEAD") ]
+        return autoversion.get_all_versions(self.path)
 
 class Sumo(Plain):
     """version seeking class for Sumo storage type"""

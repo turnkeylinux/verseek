@@ -3,7 +3,7 @@
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="51" clone_windows="0"/>
 <globals body_outline_ratio="0.378349410504">
-	<global_window_position top="0" left="17" height="933" width="800"/>
+	<global_window_position top="0" left="476" height="933" width="800"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -24,7 +24,10 @@
 <v t="zaril.20101001204903"><vh>git single</vh></v>
 <v t="zaril.20101002071459"><vh>git</vh></v>
 </v>
-<v t="zaril.20101005103427" a="TV"><vh>bug: badly formatted changelog</vh></v>
+<v t="zaril.20101005103427"><vh>bug: badly formatted changelog</vh></v>
+<v t="zaril.20101007060330" a="E"><vh>support full history</vh>
+<v t="zaril.20101019052603" a="ETV"><vh>git-single</vh></v>
+</v>
 </v>
 </v>
 <v t="zaril.20101001200109.1"><vh>bugs/wishlist</vh></v>
@@ -177,5 +180,27 @@ A: RFC822
 
 parsechangelog/debian: error: badly formatted trailer line, at file debian/changelog line 5
 </t>
+<t tx="zaril.20101007060330">
+git</t>
+<t tx="zaril.20101019052603">VERSEEK_HEAD
+
+list logic
+    autoversino $(git-rev-list --all)
+
+seek
+    if not `git-symbolic-ref VERSEEK_HEAD`:
+        git-update-ref VERSEEK_HEAD $(git-symbolic-ref HEAD)
+
+    git-checkout &lt;commit&gt;
+
+seek back
+    git-checkout -f $(basename $(git-symbolic-ref VERSEEK_HEAD))
+    rm .git/VERSEEK_HEAD
+        OR git-symbolic-ref VERSEEK_HEAD ''
+
+seek
+
+Q: can we always rely that head will be pointing to a branch?
+A: yes, otherwise we can fail</t>
 </tnodes>
 </leo_file>
