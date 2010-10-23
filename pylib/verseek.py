@@ -86,9 +86,6 @@ class Plain(Base):
 
 class Git(Plain):
     """version seeking class for git"""
-
-class GitSingle(Git):
-    """version seeking class for git repository containing one package"""
     class Head(object):
         ref = "HEAD"
         def __get__(self, obj, type):
@@ -115,7 +112,7 @@ class GitSingle(Git):
 
     verseek_head = VerseekHead()
     head = Head()
-    
+
     def _system(self, command, *args):
         orig_cwd = os.getcwd()
         os.chdir(self.path)
@@ -137,6 +134,8 @@ class GitSingle(Git):
             
         return output
 
+class GitSingle(Git):
+    """version seeking class for git repository containing one package"""
     def _get_commit_datetime(self, commit):
         output = self._getoutput("git-cat-file", "commit", commit)
         timestamp = int(re.search(r' (\d{10}) ', output).group(1))
