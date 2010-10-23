@@ -32,13 +32,6 @@ def parse_changelog(changelog):
     
 class Base(object):
     """version seeking base class"""
-    @staticmethod
-    def _parse_control(path):
-        lines = (line.strip() for line in file(path).readlines())
-        return dict([ re.split("\s*:\s*", line, 1)
-                      for line in lines
-                      if line and not line.startswith(" ") ])
-
     def __init__(self, path):
         if not isdir(path):
             raise Error("no such directory `%s'" % path)
@@ -50,8 +43,6 @@ class Base(object):
         if not exists(self.path_control):
             raise Error("missing debian/control file `%s'" % self.path_control)
 
-        self.control = self._parse_control(self.path_control)
-    
     def list(self):
         return []
 
@@ -226,14 +217,22 @@ class GitSingle(Git):
     def _create_changelog(self, version, datetime):
         release = os.environ.get("RELEASE") or "UNRELEASED"
         
+        def parse_control(path):
+            lines = (line.strip() for line in file(path).readlines())
+            return dict([ re.split("\s*:\s*", line, 1)
+                          for line in lines
+                          if line and not line.startswith(" ") ])
+
+        control = parse_control(self.path_control)
+
         fh = file(self.path_changelog, "w")
-        print >> fh, "%s (%s) %s; urgency=low" % (self.control['Source'],
+        print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
                                                   version,
                                                   release)
         print >> fh
         print >> fh, "  * auto-generated changelog entry"
         print >> fh
-        print >> fh, " --  %s  %s" % (self.control['Maintainer'],
+        print >> fh, " --  %s  %s" % (control['Maintainer'],
                                       datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
         fh.close()
 
