@@ -30,21 +30,6 @@ def parse_changelog(changelog):
 
     return None
     
-def get_git_root(dir):
-    """Walk up dir to get the gitdir.
-    Return None if we're not in a repository"""
-    dir = abspath(dir)
-
-    subdir = None
-    while True:
-        if isdir(join(dir, ".git")):
-            return dir
-
-
-        dir, subdir = split(dir)
-        if dir == '/':
-            return None
-
 class Base(object):
     """version seeking base class"""
     @staticmethod
@@ -96,6 +81,28 @@ class Plain(Base):
         if version and self._get_version() != version:
             raise Error("can't seek to nonexistent version `%s'" % version)
 
+def make_relative(root, path):
+    """Return <path> relative to <root>.
+
+    For example:
+        make_relative("../../", "file") == "path/to/file"
+        make_relative("/root", "/tmp") == "../tmp"
+        make_relative("/root", "/root/backups/file") == "backups/file"
+        
+    """
+
+    up_count = 0
+
+    root = realpath(root).rstrip('/')
+    path = realpath(path).rstrip('/')
+
+    while True:
+        if path == root or path.startswith(root.rstrip("/") + "/"):
+            return ("../" * up_count) + path[len(root) + 1:]
+
+        root = dirname(root).rstrip('/')
+        up_count += 1
+
 class Git(Plain):
     """version seeking class for git"""
     class Head(object):
@@ -145,6 +152,39 @@ class Git(Plain):
             raise Error("command failed: `%s'" % " ".join(command))
             
         return output
+
+    @staticmethod
+    def get_git_root(dir):
+        """Walk up dir to get the gitdir.
+        Return None if we're not in a repository"""
+        dir = abspath(dir)
+
+        subdir = None
+        while True:
+            if isdir(join(dir, ".git")):
+                return dir
+
+
+            dir, subdir = split(dir)
+            if dir == '/':
+                return None
+
+    def __init__(self, path):
+        Plain.__init__(self, path)
+        self.git_root = self.get_git_root(self.path)
+
+    def list(self):
+        branch = basename(self.verseek_head or self.head)
+
+        commits = self._getoutput("git-rev-list", branch,
+                                  make_relative(self.path, self.path_changelog)).split("\n")
+        
+
+        changelogs = [ self._getoutput("git-cat-file", "blob",
+                                       commit + ":" + make_relative(self.git_root, self.path_changelog))
+                       for commit in commits ]
+        
+        return [ parse_changelog(changelog) for changelog in changelogs ]
 
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
@@ -199,7 +239,7 @@ class Sumo(Plain):
 def new(path):
     """Return  instance appropriate for path"""
 
-    root = get_git_root(path)
+    root = Git.get_git_root(path)
     if root:
         if exists(join(root, "debian/control")):
             return GitSingle(path)
