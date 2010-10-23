@@ -218,10 +218,11 @@ class GitSingle(Git):
         release = os.environ.get("RELEASE") or "UNRELEASED"
         
         def parse_control(path):
-            lines = (line.strip() for line in file(path).readlines())
+            lines = (line.rstrip() for line in file(path).readlines()
+                     if not line.startswith(" "))
             return dict([ re.split("\s*:\s*", line, 1)
                           for line in lines
-                          if line and not line.startswith(" ") ])
+                          if line ])
 
         control = parse_control(self.path_control)
 
