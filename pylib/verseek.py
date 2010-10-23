@@ -20,19 +20,16 @@ def getoutput(*command):
 
     return output.rstrip("\n")
 
-def deb_get_version(srcpath):
-    changelogfile = join(srcpath, "debian/changelog")
-    if not exists(changelogfile):
-        raise Error("no such file or directory `%s'" % changelogfile)
-
-    for line in file(changelogfile).readlines():
+def parse_changelog(changelog):
+    """Parses the contents of the changelog -> returns latest version"""
+    for line in changelog.split("\n"):
         m = re.match('^\w[-+0-9a-z.]* \(([^\(\) \t]+)\)(?:\s+[-+0-9a-z.]+)+\;',line
 , re.I)
         if m:
             return m.group(1)
 
-    raise Error("can't parse version from `%s'" % changelogfile)
-
+    return None
+    
 def get_git_root(dir):
     """Walk up dir to get the gitdir.
     Return None if we're not in a repository"""
@@ -76,12 +73,27 @@ class Base(object):
         pass
 
 class Plain(Base):
-    """version seeking class for plain directory"""
+    """Version seeking class for plain directory.
+
+    Since plain directories don't actually support history,
+    list just shows the latest version and seek is a dummy function.
+    """
+    def _get_version(self):
+        changelogfile = join(self.path, "debian/changelog")
+        if not exists(changelogfile):
+            raise Error("no such file or directory `%s'" % changelogfile)
+
+        version = parse_changelog(file(changelogfile).read())
+        if not version:
+            raise Error("can't parse version from `%s'" % changelogfile)
+
+        return version
+
     def list(self):
-        return [ deb_get_version(self.path) ]
+        return [ self._get_version() ]
 
     def seek(self, version=None):
-        if version and deb_get_version(self.path) != version:
+        if version and self._get_version() != version:
             raise Error("can't seek to nonexistent version `%s'" % version)
 
 class Git(Plain):
