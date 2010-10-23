@@ -2,8 +2,8 @@
 <?xml-stylesheet ekr_test?>
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="51" clone_windows="0"/>
-<globals body_outline_ratio="0.378349410504">
-	<global_window_position top="0" left="476" height="933" width="800"/>
+<globals body_outline_ratio="0.453376205788">
+	<global_window_position top="0" left="469" height="933" width="800"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -15,6 +15,7 @@
 <v t="zaril.20101001195902.2" a="E"><vh>brainstorming</vh></v>
 <v t="zaril.20101001233547"><vh>terminology</vh></v>
 <v t="zaril.20101001195902.5"><vh>cli syntax and logic</vh></v>
+<v t="zaril.20101023064447" a="TV"><vh>limitations</vh></v>
 </v>
 <v t="zaril.20101001201018.3" a="E"><vh>implementation</vh>
 <v t="zaril.20101001204645"><vh>cli stubs</vh></v>
@@ -26,7 +27,8 @@
 </v>
 <v t="zaril.20101005103427"><vh>bug: badly formatted changelog</vh></v>
 <v t="zaril.20101007060330" a="E"><vh>support full history</vh>
-<v t="zaril.20101019052603" a="ETV"><vh>git-single</vh></v>
+<v t="zaril.20101019052603" a="E"><vh>git-single</vh></v>
+<v t="zaril.20101023044815"><vh>git</vh></v>
 </v>
 </v>
 </v>
@@ -202,5 +204,41 @@ seek
 
 Q: can we always rely that head will be pointing to a branch?
 A: yes, otherwise we can fail</t>
+<t tx="zaril.20101023044815">roadmap
+    create a test environment
+        pyproject prints a different hello each version
+
+    manually figure out how to list/seek to 
+
+Q: how do we create the changelog?
+A:
+    change it manually? (with dch)
+
+tips
+    edit package inside jaunty.1 chroot
+
+GOTCHA: dch -i creates an ubuntu version
+    dch -v 1.2
+        or edit manually (cut and paste)
+
+
+create new test version
+    increment hello in pylib/cmd_hello.py
+    increment debian/changelog
+    commit
+
+listing logic
+    branch is either what head is pointing to, or what head used to point to before?
+        maybe we can rely on verseek -l not being used in the middle of a seek?
+
+    git-rev-list &lt;branch&gt; path/to/changelog
+    parse changelog for each rev
+
+
+seek restore
+seek commit</t>
+<t tx="zaril.20101023064447">debian/control must exist for all versions
+    if you seek back to a version that does not have debian/control - you won't be able to seek back
+</t>
 </tnodes>
 </leo_file>

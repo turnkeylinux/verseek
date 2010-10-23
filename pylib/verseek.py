@@ -34,9 +34,10 @@ class Base(object):
     """version seeking base class"""
     @staticmethod
     def _parse_control(path):
-        return dict([ re.split("\s*:\s+", line.strip(), 1)
-                      for line in file(path).readlines()
-                      if line.strip() and not line.startswith(" ") ])
+        lines = (line.strip() for line in file(path).readlines())
+        return dict([ re.split("\s*:\s*", line, 1)
+                      for line in lines
+                      if line and not line.startswith(" ") ])
 
     def __init__(self, path):
         if not isdir(path):
@@ -173,7 +174,7 @@ class Git(Plain):
         Plain.__init__(self, path)
         self.git_root = self.get_git_root(self.path)
 
-    def list(self):
+    def _list(self):
         branch = basename(self.verseek_head or self.head)
 
         commits = self._getoutput("git-rev-list", branch,
@@ -184,7 +185,36 @@ class Git(Plain):
                                        commit + ":" + make_relative(self.git_root, self.path_changelog))
                        for commit in commits ]
         
-        return [ parse_changelog(changelog) for changelog in changelogs ]
+        versions = [ parse_changelog(changelog) for changelog in changelogs ]
+        return zip(versions, commits)
+
+    def list(self):
+        return [ version for version, commit in self._list() ]
+
+    def _seek_restore(self):
+        """restore repository to state before seek"""
+        if not self.verseek_head:
+            raise Error("no version to seek back to")
+
+        self._system("git-checkout -q -f", basename(self.verseek_head))
+        self.verseek_head = None
+
+    def _seek_commit(self, commit):
+        if not self.verseek_head:
+            self.verseek_head = self.head
+
+        self._system("git-checkout -q -f", commit)
+
+    def seek(self, version=None):
+        if not version:
+            self._seek_restore()
+        else:
+            versions = dict(self._list())
+            if version not in versions:
+                raise Error("no such version `%s'" % version)
+
+            commit = versions[version]
+            self._seek_commit(commit)
 
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
@@ -212,21 +242,14 @@ class GitSingle(Git):
             if exists(self.path_changelog):
                 os.remove(self.path_changelog)
 
-            if not self.verseek_head:
-                raise Error("no version to seek back to")
-            
-            self._system("git-checkout -q -f", basename(self.verseek_head))
-            self.verseek_head = None
+            self._seek_restore()
         else:
             try:
                 commit = self._getoutput("autoversion", "-r", version)
             except Error:
                 raise Error("no such version `%s'" % version)
 
-            if not self.verseek_head:
-                self.verseek_head = self.head
-
-            self._system("git-checkout -q -f", commit)
+            self._seek_commit(commit)
             self._create_changelog(version, self._get_commit_datetime(commit))
             
     def list(self):
