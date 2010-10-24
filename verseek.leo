@@ -15,7 +15,7 @@
 <v t="zaril.20101001195902.2" a="E"><vh>brainstorming</vh></v>
 <v t="zaril.20101001233547"><vh>terminology</vh></v>
 <v t="zaril.20101001195902.5"><vh>cli syntax and logic</vh></v>
-<v t="zaril.20101023064447" a="TV"><vh>limitations</vh></v>
+<v t="zaril.20101023064447"><vh>limitations</vh></v>
 </v>
 <v t="zaril.20101001201018.3" a="E"><vh>implementation</vh>
 <v t="zaril.20101001204645"><vh>cli stubs</vh></v>
@@ -29,10 +29,13 @@
 <v t="zaril.20101007060330" a="E"><vh>support full history</vh>
 <v t="zaril.20101019052603" a="E"><vh>git-single</vh></v>
 <v t="zaril.20101023044815"><vh>git</vh></v>
+<v t="zaril.20101023071537" a="ETV"><vh>sumo</vh></v>
 </v>
 </v>
 </v>
-<v t="zaril.20101001200109.1"><vh>bugs/wishlist</vh></v>
+<v t="zaril.20101001200109.1" a="E"><vh>bugs/wishlist</vh>
+<v t="zaril.20101023071147"><vh>bug: debian/control must exist for all autoversions</vh></v>
+</v>
 </v>
 </vnodes>
 <tnodes>
@@ -237,8 +240,36 @@ listing logic
 
 seek restore
 seek commit</t>
-<t tx="zaril.20101023064447">debian/control must exist for all versions
+<t tx="zaril.20101023064447">debian/control must exist for all autoversions
     if you seek back to a version that does not have debian/control - you won't be able to seek back
 </t>
+<t tx="zaril.20101023071147">ideas:
+    maybe filter autoversions that don't have debian/control
+        cons: that would be very slow
+
+    we would have to try and git-cat-file blob debian/control for each commit
+        if it doesn't exist, filter the autoversion
+
+</t>
+<t tx="zaril.20101023071537">testbed 
+    original: sumo/tmp/t52
+        download pyhello into sumo
+        create a bunch of changes (with different versions)
+    
+    clone: turnkey/tmp/verseek/t52
+        checkout individual commits
+
+verseek list logic
+    lookup currently checked out branch's thin counterpart
+
+    git-rev-list &lt;thin-branch&gt; internals/overlay/&lt;path&gt;/debian/changelog
+        -&gt; list of thin commits
+
+    parse changelog in each commit -&gt; versions
+
+verseek seek logic
+    sumo-checkout &lt;thin-commit&gt;
+    
+    restore: sumo-checkout &lt;saved-branch&gt;</t>
 </tnodes>
 </leo_file>

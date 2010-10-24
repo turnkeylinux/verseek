@@ -256,8 +256,29 @@ class GitSingle(Git):
         commits = self._getoutput("git-rev-list", "--all").split("\n")
         return self._getoutput("autoversion", *commits).split("\n")
 
-class Sumo(Plain):
+class Sumo(Git):
     """version seeking class for Sumo storage type"""
+
+    def _list(self):
+        branch = basename(self.verseek_head or self.head) + "-thin"
+
+        path_union = self.path_changelog
+        path_relative = make_relative(join(self.git_root, "arena.union"), path_union)
+        path_internals = join(self.git_root, "arena.internals/overlay", path_relative)
+        
+        commits = self._getoutput("git-rev-list", branch,
+                                  make_relative(self.path, path_internals)).split("\n")
+        
+
+        changelogs = [ self._getoutput("git-cat-file", "blob",
+                                       commit + ":" + make_relative(self.git_root, path_internals))
+                       for commit in commits ]
+        
+        versions = [ parse_changelog(changelog) for changelog in changelogs ]
+        return zip(versions, commits)
+
+    def seek(self, version=None):
+        raise Error("not implemented yet")
 
 def new(path):
     """Return  instance appropriate for path"""
