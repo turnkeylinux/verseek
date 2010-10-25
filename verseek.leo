@@ -2,8 +2,8 @@
 <?xml-stylesheet ekr_test?>
 <leo_file>
 <leo_header file_format="2" tnodes="0" max_tnode_index="51" clone_windows="0"/>
-<globals body_outline_ratio="0.453376205788">
-	<global_window_position top="0" left="469" height="933" width="800"/>
+<globals body_outline_ratio="0.0996784565916">
+	<global_window_position top="0" left="470" height="933" width="800"/>
 	<global_log_window_position top="0" left="0" height="0" width="0"/>
 </globals>
 <preferences/>
@@ -29,7 +29,10 @@
 <v t="zaril.20101007060330" a="E"><vh>support full history</vh>
 <v t="zaril.20101019052603" a="E"><vh>git-single</vh></v>
 <v t="zaril.20101023044815"><vh>git</vh></v>
-<v t="zaril.20101023071537" a="ETV"><vh>sumo</vh></v>
+<v t="zaril.20101023071537" a="E"><vh>sumo</vh>
+<v t="zaril.20101024025802" a="M"><vh>implement list</vh></v>
+<v t="zaril.20101024025802.1" a="ETV"><vh>implement seek</vh></v>
+</v>
 </v>
 </v>
 </v>
@@ -257,17 +260,16 @@ seek commit</t>
         create a bunch of changes (with different versions)
     
     clone: turnkey/tmp/verseek/t52
-        checkout individual commits
-
+        checkout individual commits</t>
+<t tx="zaril.20101024025802">
 verseek list logic
     lookup currently checked out branch's thin counterpart
 
     git-rev-list &lt;thin-branch&gt; internals/overlay/&lt;path&gt;/debian/changelog
         -&gt; list of thin commits
 
-    parse changelog in each commit -&gt; versions
-
-verseek seek logic
+    parse changelog in each commit -&gt; versions</t>
+<t tx="zaril.20101024025802.1">verseek seek logic
     sumo-checkout &lt;thin-commit&gt;
     
     restore: sumo-checkout &lt;saved-branch&gt;</t>

@@ -126,7 +126,7 @@ class Git(Plain):
 
     def _system(self, command, *args):
         orig_cwd = os.getcwd()
-        os.chdir(self.path)
+        os.chdir(self.git_root)
         command = command + " " + " ".join([commands.mkarg(arg) for arg in args])
         err = os.system(command)
         os.chdir(orig_cwd)
@@ -136,7 +136,7 @@ class Git(Plain):
 
     def _getoutput(self, *command):
         orig_cwd = os.getcwd()
-        os.chdir(self.path)
+        os.chdir(self.git_root)
         output = getoutput(*command)
         os.chdir(orig_cwd)
 
@@ -168,12 +168,12 @@ class Git(Plain):
     def _list(self):
         branch = basename(self.verseek_head or self.head)
 
+        path_changelog = make_relative(self.git_root, self.path_changelog)
         commits = self._getoutput("git-rev-list", branch,
-                                  make_relative(self.path, self.path_changelog)).split("\n")
-        
+                                  path_changelog).split("\n")
 
         changelogs = [ self._getoutput("git-cat-file", "blob",
-                                       commit + ":" + make_relative(self.git_root, self.path_changelog))
+                                       commit + ":" + path_changelog)
                        for commit in commits ]
         
         versions = [ parse_changelog(changelog) for changelog in changelogs ]
@@ -182,19 +182,21 @@ class Git(Plain):
     def list(self):
         return [ version for version, commit in self._list() ]
 
+    CMD_CHECKOUT = "git-checkout -q -f"
+
     def _seek_restore(self):
         """restore repository to state before seek"""
         if not self.verseek_head:
             raise Error("no version to seek back to")
 
-        self._system("git-checkout -q -f", basename(self.verseek_head))
+        self._system(self.CMD_CHECKOUT, basename(self.verseek_head))
         self.verseek_head = None
 
     def _seek_commit(self, commit):
         if not self.verseek_head:
             self.verseek_head = self.head
 
-        self._system("git-checkout -q -f", commit)
+        self._system(self.CMD_CHECKOUT, commit)
 
     def seek(self, version=None):
         if not version:
@@ -262,23 +264,24 @@ class Sumo(Git):
     def _list(self):
         branch = basename(self.verseek_head or self.head) + "-thin"
 
-        path_union = self.path_changelog
-        path_relative = make_relative(join(self.git_root, "arena.union"), path_union)
+        path_relative = make_relative(join(self.git_root, "arena.union"),
+                                      self.path_changelog)
+
         path_internals = join(self.git_root, "arena.internals/overlay", path_relative)
+        path_changelog = make_relative(self.git_root, path_internals)
         
         commits = self._getoutput("git-rev-list", branch,
-                                  make_relative(self.path, path_internals)).split("\n")
+                                  path_changelog).split("\n")
         
 
         changelogs = [ self._getoutput("git-cat-file", "blob",
-                                       commit + ":" + make_relative(self.git_root, path_internals))
+                                       commit + ":" + path_changelog)
                        for commit in commits ]
         
         versions = [ parse_changelog(changelog) for changelog in changelogs ]
         return zip(versions, commits)
 
-    def seek(self, version=None):
-        raise Error("not implemented yet")
+    CMD_CHECKOUT = "sumo-checkout"
 
 def new(path):
     """Return  instance appropriate for path"""
