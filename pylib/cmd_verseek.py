@@ -4,7 +4,7 @@
 If no <version> is specified, undo previous seek (restore state)
 
 Options:
-  -l    list seekable versions
+  -l --list   list seekable versions
   
 """
 from os.path import *
@@ -40,7 +40,7 @@ def seek(path, version):
     
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "l")
+        opts, args = getopt.getopt(sys.argv[1:], "l", ["list"])
     except getopt.GetoptError:
         usage(e)
 
@@ -55,7 +55,7 @@ def main():
         if opt == '-h':
             usage()
 
-        if opt == '-l':
+        if opt in ('-l', '--list'):
             return list(srcpath)
             
     try:
