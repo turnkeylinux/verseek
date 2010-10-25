@@ -60,6 +60,9 @@ def main():
             
     try:
         version = args[1]
+        if version in ('-l', '--list'):
+            return list(srcpath)
+        
     except IndexError:
         version = None
 
