@@ -41,7 +41,7 @@ def seek(path, version):
 def main():
     try:
         opts, args = getopt.getopt(sys.argv[1:], "l", ["list"])
-    except getopt.GetoptError:
+    except getopt.GetoptError, e:
         usage(e)
 
     if not args:
