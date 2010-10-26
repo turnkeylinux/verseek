@@ -95,7 +95,7 @@ def make_relative(root, path):
         root = dirname(root).rstrip('/')
         up_count += 1
 
-class Git(Plain):
+class Git(Base):
     """version seeking class for git"""
     class Head(object):
         ref = "HEAD"
@@ -162,7 +162,7 @@ class Git(Plain):
                 return None
 
     def __init__(self, path):
-        Plain.__init__(self, path)
+        Base.__init__(self, path)
         self.git_root = self.get_git_root(self.path)
 
     def _list(self):
