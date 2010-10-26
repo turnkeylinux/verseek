@@ -1,6 +1,10 @@
 #!/usr/bin/python
 """Seek to available versions in Debian source package
 
+Environment variables:
+  RELEASE	Release parameter for changelogs created on-the-fly
+		default: UNRELEASED
+
 If no <version> is specified, undo previous seek (restore state)
 
 Options:
