@@ -255,7 +255,9 @@ class GitSingle(Git):
             self._create_changelog(version, self._get_commit_datetime(commit))
             
     def list(self):
-        commits = self._getoutput("git-rev-list", "--all").split("\n")
+        branch = basename(self.verseek_head or self.head)
+        
+        commits = self._getoutput("git-rev-list", branch).split("\n")
         return self._getoutput("autoversion", *commits).split("\n")
 
 class Sumo(Git):
