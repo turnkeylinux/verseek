@@ -44,7 +44,7 @@ def seek(path, version):
     
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "l", ["list"])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "l", ["list"])
     except getopt.GetoptError, e:
         usage(e)
 
