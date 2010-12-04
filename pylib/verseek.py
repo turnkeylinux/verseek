@@ -6,6 +6,7 @@ import datetime
 import commands
 
 from subprocess import *
+from executil import system
 
 class Error(Exception):
     pass
@@ -127,12 +128,10 @@ class Git(Base):
     def _system(self, command, *args):
         orig_cwd = os.getcwd()
         os.chdir(self.git_root)
-        command = command + " " + " ".join([commands.mkarg(arg) for arg in args])
-        err = os.system(command)
-        os.chdir(orig_cwd)
-        if err:
-            raise Error("command failed: " + command,
-                        os.WEXITSTATUS(err))
+        try:
+            system(command, *args)
+        finally:
+            os.chdir(orig_cwd)
 
     def _getoutput(self, *command):
         orig_cwd = os.getcwd()
