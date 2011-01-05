@@ -2,11 +2,11 @@ Source: verseek
 Section: misc
 Priority: optional
 Maintainer: Liraz Siri <liraz@turnkeylinux.org>
-Build-Depends: debhelper (>> 4.2.0), python (>= 2.4)
+Build-Depends: pyproject-common
 Standards-Version: 3.6.1
 
 Package: verseek
 Architecture: any
-Depends: python (>= 2.4), turnkey-pylib, git-core (>= 1:1.5.2)
+Depends: pyproject-common, git-core (>= 1:1.5.2)
 Recommends: autoversion, sumo
 Description: Abstract interface for listing/accessing versions of Debian sources
