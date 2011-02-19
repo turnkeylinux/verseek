@@ -304,5 +304,8 @@ def list(path):
     return new(path).list()
 
 def seek(path, version=None):
-    """ """
+    """Seek to <version> in Debian source package at <path>.
+    If <version> is None, unseek.
+    
+    Note: how this is implemented depends on the path type."""
     return new(path).seek(version)
