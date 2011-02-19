@@ -8,6 +8,8 @@ import commands
 from subprocess import *
 from executil import system
 
+from pyproject.autoversion.autoversion import Autoversion
+
 class Error(Exception):
     pass
 
@@ -210,6 +212,10 @@ class Git(Base):
 
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
+    def __init__(self, path):
+        Git.__init__(self, path)
+        self.autoversion = Autoversion(path, precache=True)
+    
     def _get_commit_datetime(self, commit):
         output = self._getoutput("git-cat-file", "commit", commit)
         timestamp = int(re.search(r' (\d{10}) ', output).group(1))
@@ -245,11 +251,7 @@ class GitSingle(Git):
 
             self._seek_restore()
         else:
-            try:
-                commit = self._getoutput("autoversion", "-r", version)
-            except Error:
-                raise Error("no such version `%s'" % version)
-
+            commit = self.autoversion.version2commit(version)
             self._seek_commit(commit)
             self._create_changelog(version, self._get_commit_datetime(commit))
             
@@ -257,7 +259,8 @@ class GitSingle(Git):
         branch = basename(self.verseek_head or self.head)
         
         commits = self._getoutput("git-rev-list", branch).split("\n")
-        return self._getoutput("autoversion", *commits).split("\n")
+        return [ self.autoversion.commit2version(commit)
+                 for commit in commits ]
 
 class Sumo(Git):
     """version seeking class for Sumo storage type"""
