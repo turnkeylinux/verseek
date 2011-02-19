@@ -3,25 +3,14 @@ from os.path import *
 import os
 import re
 import datetime
-import commands
 
-from subprocess import *
 from executil import system
 
+import git
 from pyproject.autoversion.autoversion import Autoversion
 
 class Error(Exception):
     pass
-
-def getoutput(*command):
-    """executes command and returns stdout output on success, None on error."""
-    p = Popen(command, stdout=PIPE, stderr=PIPE)
-    output = p.communicate()[0]
-
-    if p.returncode:
-        return None
-
-    return output.rstrip("\n")
 
 def parse_changelog(changelog):
     """Parses the contents of the changelog -> returns latest version"""
@@ -104,16 +93,16 @@ class Git(Base):
         ref = "HEAD"
         def __get__(self, obj, type):
             try:
-                return obj._getoutput("git-symbolic-ref", self.ref)
-            except Error:
+                return obj.git.symbolic_ref(self.ref)
+            except obj.git.Error:
                 raise Error("HEAD isn't pointing to a branch")
 
     class VerseekHead(object):
         ref = "VERSEEK_HEAD"
         def __get__(self, obj, type):
             try:
-                return obj._getoutput("git-symbolic-ref", self.ref)
-            except Error:
+                return obj.git.symbolic_ref(self.ref)
+            except obj.git.Error:
                 return None
 
         def __set__(self, obj, val):
@@ -122,29 +111,10 @@ class Git(Base):
                 if exists(ref_path):
                     os.remove(ref_path)
             else:
-                obj._getoutput("git-symbolic-ref", self.ref, val)
+                obj.git.symbolic_ref(self.ref, val)
 
     verseek_head = VerseekHead()
     head = Head()
-
-    def _system(self, command, *args):
-        orig_cwd = os.getcwd()
-        os.chdir(self.git_root)
-        try:
-            system(command, *args)
-        finally:
-            os.chdir(orig_cwd)
-
-    def _getoutput(self, *command):
-        orig_cwd = os.getcwd()
-        os.chdir(self.git_root)
-        output = getoutput(*command)
-        os.chdir(orig_cwd)
-
-        if output is None:
-            raise Error("command failed: `%s'" % " ".join(command))
-            
-        return output
 
     @staticmethod
     def get_git_root(dir):
@@ -164,17 +134,16 @@ class Git(Base):
 
     def __init__(self, path):
         Base.__init__(self, path)
-        self.git_root = self.get_git_root(self.path)
+        self.git = git.Git(self.get_git_root(self.path))
 
     def _list(self):
         branch = basename(self.verseek_head or self.head)
 
-        path_changelog = make_relative(self.git_root, self.path_changelog)
-        commits = self._getoutput("git-rev-list", branch,
-                                  path_changelog).split("\n")
+        path_changelog = make_relative(self.git.path, self.path_changelog)
+        commits = self.git.rev_list(branch, path_changelog)
 
-        changelogs = [ self._getoutput("git-cat-file", "blob",
-                                       commit + ":" + path_changelog)
+        changelogs = [ self.git.cat_file("blob",
+                                         commit + ":" + path_changelog)
                        for commit in commits ]
         
         versions = [ parse_changelog(changelog) for changelog in changelogs ]
@@ -183,21 +152,22 @@ class Git(Base):
     def list(self):
         return [ version for version, commit in self._list() ]
 
-    CMD_CHECKOUT = "git-checkout -q -f"
+    def _checkout(self, arg):
+        self.git.checkout("-q", "-f", arg)
 
     def _seek_restore(self):
         """restore repository to state before seek"""
         if not self.verseek_head:
             raise Error("no version to seek back to")
 
-        self._system(self.CMD_CHECKOUT, basename(self.verseek_head))
+        self._checkout(basename(self.verseek_head))
         self.verseek_head = None
 
     def _seek_commit(self, commit):
         if not self.verseek_head:
             self.verseek_head = self.head
 
-        self._system(self.CMD_CHECKOUT, commit)
+        self._checkout(commit)
 
     def seek(self, version=None):
         if not version:
@@ -217,7 +187,7 @@ class GitSingle(Git):
         self.autoversion = Autoversion(path, precache=True)
     
     def _get_commit_datetime(self, commit):
-        output = self._getoutput("git-cat-file", "commit", commit)
+        output = self.git.cat_file("commit", commit)
         timestamp = int(re.search(r' (\d{10}) ', output).group(1))
         return datetime.datetime.fromtimestamp(timestamp)
 
@@ -258,7 +228,7 @@ class GitSingle(Git):
     def list(self):
         branch = basename(self.verseek_head or self.head)
         
-        commits = self._getoutput("git-rev-list", branch).split("\n")
+        commits = self.git.rev_list(branch)
         return [ self.autoversion.commit2version(commit)
                  for commit in commits ]
 
@@ -268,24 +238,27 @@ class Sumo(Git):
     def _list(self):
         branch = basename(self.verseek_head or self.head) + "-thin"
 
-        path_relative = make_relative(join(self.git_root, "arena.union"),
+        path_relative = make_relative(join(self.git.path, "arena.union"),
                                       self.path_changelog)
 
-        path_internals = join(self.git_root, "arena.internals/overlay", path_relative)
-        path_changelog = make_relative(self.git_root, path_internals)
+        path_internals = join(self.git.path, "arena.internals/overlay", path_relative)
+        path_changelog = make_relative(self.git.path, path_internals)
         
-        commits = self._getoutput("git-rev-list", branch,
-                                  path_changelog).split("\n")
-        
-
-        changelogs = [ self._getoutput("git-cat-file", "blob",
-                                       commit + ":" + path_changelog)
+        commits = self.git.rev_list(branch, path_changelog)
+        changelogs = [ self.git.cat_file("blob",
+                                         commit + ":" + path_changelog)
                        for commit in commits ]
         
         versions = [ parse_changelog(changelog) for changelog in changelogs ]
         return zip(versions, commits)
 
-    CMD_CHECKOUT = "sumo-checkout"
+    def _checkout(self, arg):
+        orig_cwd = os.getcwd()
+        os.chdir(self.git.path)
+        try:
+            system("sumo-checkout", arg)
+        finally:
+            os.chdir(orig_cwd)
 
 def new(path):
     """Return  instance appropriate for path"""
