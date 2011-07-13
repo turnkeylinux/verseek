@@ -208,7 +208,7 @@ class GitSingle(Git):
                                                   version,
                                                   release)
         print >> fh
-        print >> fh, "  * auto-generated changelog entry"
+        print >> fh, "  * undocumented"
         print >> fh
         print >> fh, " --  %s  %s" % (control['Maintainer'],
                                       datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
