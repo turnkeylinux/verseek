@@ -192,7 +192,7 @@ class GitSingle(Git):
         return datetime.datetime.fromtimestamp(timestamp)
 
     def _create_changelog(self, version, datetime):
-        release = "AUTO"
+        release = "UNRELEASED"
         
         def parse_control(path):
             lines = (line.rstrip() for line in file(path).readlines()
