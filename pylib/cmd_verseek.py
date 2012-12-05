@@ -1,4 +1,13 @@
 #!/usr/bin/python
+# Copyright (c) TurnKey Linux - http://www.turnkeylinux.org
+#
+# This file is part of Verseek
+#
+# Verseek is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 3 of the License, or (at your
+# option) any later version.
+
 """Seek to available versions in Debian source package
 
 If no <version> is specified, undo previous seek (restore state)
