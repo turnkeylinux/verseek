@@ -5,7 +5,9 @@ Maintainer: Liraz Siri <liraz@turnkeylinux.org>
 Build-Depends:
  debhelper (>= 10),
  pyproject-common,
+ python-all (>= 2.6.6-3~),
 Standards-Version: 4.0.0
+X-Python-Version: >= 2.6
 
 Package: verseek
 Architecture: any
@@ -13,6 +15,7 @@ Depends:
  git-core (>= 1:1.5.2),
  ${misc:Depends},
  pyproject-common,
+ ${shlibs:Depends},
 Recommends:
  autoversion,
  sumo,
