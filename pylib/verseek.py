@@ -198,7 +198,7 @@ class GitSingle(Git):
     def _get_commit_datetime(self, commit):
         output = self.git.cat_file("commit", commit)
         timestamp = int(re.search(r' (\d{10}) ', output).group(1))
-        return datetime.datetime.fromtimestamp(timestamp)
+        return datetime.datetime.utcfromtimestamp(timestamp)
 
     def _create_changelog(self, version, datetime):
         release = "UNRELEASED"
