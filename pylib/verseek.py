@@ -18,6 +18,8 @@ from executil import system
 import git
 from pyproject.autoversion.autoversion import Autoversion
 
+import locale
+
 class Error(Exception):
     pass
 
@@ -212,6 +214,9 @@ class GitSingle(Git):
 
         control = parse_control(self.path_control)
 
+        old_locale = locale.getlocale(locale.LC_TIME)
+        locale.setlocale(locale.LC_TIME, 'c')
+
         fh = file(self.path_changelog, "w")
         print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
                                                   version,
@@ -221,6 +226,7 @@ class GitSingle(Git):
         print >> fh
         print >> fh, " --  %s  %s" % (control['Maintainer'],
                                       datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+        locale.setlocale(old_locale)
         fh.close()
 
     def seek(self, version=None):
