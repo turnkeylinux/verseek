@@ -208,7 +208,7 @@ class GitSingle(Git):
                      if not line.startswith(" "))
             return dict([ re.split("\s*:\s*", line, 1)
                           for line in lines
-                          if line ])
+                          if line or ':' in line])
 
         control = parse_control(self.path_control)
 
