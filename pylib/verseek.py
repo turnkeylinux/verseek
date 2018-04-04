@@ -20,6 +20,18 @@ from pyproject.autoversion.autoversion import Autoversion
 
 import locale
 
+class LocaleAs(object):
+    def __init__(self, category, new_locale):
+        self.category = category
+        self.new_locale = new_locale
+
+    def __enter__(self):
+        self.old_locale = locale.getlocale(self.category)
+        locale.setlocale(self.category, self.new_locale)
+
+    def __exit__(self, type, value, traceback):
+        locale.setlocale(self.category, self.old_locale)
+
 class Error(Exception):
     pass
 
@@ -214,20 +226,17 @@ class GitSingle(Git):
 
         control = parse_control(self.path_control)
 
-        old_locale = locale.getlocale(locale.LC_TIME)
-        locale.setlocale(locale.LC_TIME, 'c')
-
-        fh = file(self.path_changelog, "w")
-        print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
-                                                  version,
-                                                  release)
-        print >> fh
-        print >> fh, "  * undocumented"
-        print >> fh
-        print >> fh, " --  %s  %s" % (control['Maintainer'],
+        with LocaleAs(locale.LC_TIME, 'C'):
+            fh = file(self.path_changelog, "w")
+            print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
+                                                      version,
+                                                      release)
+            print >> fh
+            print >> fh, "  * undocumented"
+            print >> fh
+            print >> fh, " --  %s  %s" % (control['Maintainer'],
                                       datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
-        locale.setlocale(old_locale)
-        fh.close()
+            fh.close()
 
     def seek(self, version=None):
         if not version:
