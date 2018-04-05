@@ -18,6 +18,20 @@ from executil import system
 import git
 from pyproject.autoversion.autoversion import Autoversion
 
+import locale
+
+class LocaleAs(object):
+    def __init__(self, category, new_locale):
+        self.category = category
+        self.new_locale = new_locale
+
+    def __enter__(self):
+        self.old_locale = locale.getlocale(self.category)
+        locale.setlocale(self.category, self.new_locale)
+
+    def __exit__(self, type, value, traceback):
+        locale.setlocale(self.category, self.old_locale)
+
 class Error(Exception):
     pass
 
@@ -198,7 +212,7 @@ class GitSingle(Git):
     def _get_commit_datetime(self, commit):
         output = self.git.cat_file("commit", commit)
         timestamp = int(re.search(r' (\d{10}) ', output).group(1))
-        return datetime.datetime.fromtimestamp(timestamp)
+        return datetime.datetime.utcfromtimestamp(timestamp)
 
     def _create_changelog(self, version, datetime):
         release = "UNRELEASED"
@@ -212,16 +226,17 @@ class GitSingle(Git):
 
         control = parse_control(self.path_control)
 
-        fh = file(self.path_changelog, "w")
-        print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
-                                                  version,
-                                                  release)
-        print >> fh
-        print >> fh, "  * undocumented"
-        print >> fh
-        print >> fh, " --  %s  %s" % (control['Maintainer'],
+        with LocaleAs(locale.LC_TIME, 'C'):
+            fh = file(self.path_changelog, "w")
+            print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
+                                                      version,
+                                                      release)
+            print >> fh
+            print >> fh, "  * undocumented"
+            print >> fh
+            print >> fh, " --  %s  %s" % (control['Maintainer'],
                                       datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
-        fh.close()
+            fh.close()
 
     def seek(self, version=None):
         if not version:
