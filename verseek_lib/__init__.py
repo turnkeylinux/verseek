@@ -170,7 +170,7 @@ class Git(Base):
                        for commit in commits ]
         
         versions = [ parse_changelog(changelog) for changelog in changelogs ]
-        return zip(versions, commits)
+        return list(zip(versions, commits))
 
     def list(self):
         return [ version for version, commit in self._list() ]
@@ -228,14 +228,14 @@ class GitSingle(Git):
 
         with LocaleAs(locale.LC_TIME, 'C'):
             fh = file(self.path_changelog, "w")
-            print >> fh, "%s (%s) %s; urgency=low" % (control['Source'],
+            print("%s (%s) %s; urgency=low" % (control['Source'],
                                                       version,
-                                                      release)
-            print >> fh
-            print >> fh, "  * undocumented"
-            print >> fh
-            print >> fh, " --  %s  %s" % (control['Maintainer'],
-                                      datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"))
+                                                      release), file=fh)
+            print(file=fh)
+            print("  * undocumented", file=fh)
+            print(file=fh)
+            print(" --  %s  %s" % (control['Maintainer'],
+                                      datetime.strftime("%a, %d %b %Y %H:%M:%S +0000")), file=fh)
             fh.close()
 
     def seek(self, version=None):
@@ -274,7 +274,7 @@ class Sumo(Git):
                        for commit in commits ]
         
         versions = [ parse_changelog(changelog) for changelog in changelogs ]
-        return zip(versions, commits)
+        return list(zip(versions, commits))
 
     def _checkout(self, arg):
         orig_cwd = os.getcwd()

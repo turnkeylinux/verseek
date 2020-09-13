@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Copyright (c) TurnKey GNU/Linux - http://www.turnkeylinux.org
 #
 # This file is part of Verseek
@@ -16,41 +16,45 @@ Options:
   -l --list   list seekable versions
   
 """
-from os.path import *
+from os.path import *  # 
 import sys
-import help
 import getopt
 
-import verseek
+import verseek_lib as verseek
+
 
 @help.usage(__doc__)
 def usage():
-    print >> sys.stderr, "Syntax: %s -l /path/to/debian-source" % sys.argv[0]
-    print >> sys.stderr, "Syntax: %s /path/to/debian-source [ <version> ]" % sys.argv[0]
+    print("Syntax: %s -l /path/to/debian-source" % sys.argv[0], file=sys.stderr)
+    print("Syntax: %s /path/to/debian-source [ <version> ]" % sys.argv[0], file=sys.stderr)
+
 
 def fatal(s):
-    print >> sys.stderr, "error: " + str(s)
+    print("error: " + str(s), file=sys.stderr)
     sys.exit(1)
+
 
 def list(path):
     try:
         versions = verseek.list(path)
-    except verseek.Error, e:
+    except verseek.Error as e:
         fatal(e)
         
     for version in versions:
-        print version
+        print(version)
+
 
 def seek(path, version):
     try:
         verseek.seek(path, version)
-    except verseek.Error, e:
+    except verseek.Error as e:
         fatal(e)
-    
+
+
 def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], "l", ["list"])
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         usage(e)
 
     if not args:
@@ -76,7 +80,7 @@ def main():
         version = None
 
     seek(srcpath, version)
-    
+
+
 if __name__=="__main__":
     main()
-
