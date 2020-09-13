@@ -36,9 +36,9 @@ def fatal(s):
     sys.exit(1)
 
 
-def list(path):
+def list_(path):
     try:
-        versions = verseek.list(path)
+        versions = verseek.list_(path)
     except verseek.Error as e:
         fatal(e)
 
@@ -71,12 +71,12 @@ def main():
             usage()
 
         if opt in ('-l', '--list'):
-            return list(srcpath)
+            return list_(srcpath)
 
     try:
         version = args[1]
         if version in ('-l', '--list'):
-            return list(srcpath)
+            return list_(srcpath)
 
     except IndexError:
         version = None

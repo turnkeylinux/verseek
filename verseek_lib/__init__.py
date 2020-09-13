@@ -64,7 +64,7 @@ class Base(object):
             raise VerseekError("missing debian/control file `{}'"
                                "".format(self.path_control))
 
-    def list(self):
+    def list_(self):
         return []
 
     def seek(self, version=None):
@@ -90,7 +90,7 @@ class Plain(Base):
 
         return version
 
-    def list(self):
+    def list_(self):
         return [self._get_version()]
 
     def seek(self, version=None):
@@ -183,9 +183,9 @@ class Git(Base):
                       for commit in commits]
 
         versions = [parse_changelog(changelog) for changelog in changelogs]
-        return list(zip(versions, commits))
+        return list_(zip(versions, commits))
 
-    def list(self):
+    def list_(self):
         return [version for version, commit in self._list()]
 
     def _checkout(self, arg):
@@ -267,7 +267,7 @@ class GitSingle(Git):
             self._seek_commit(commit)
             self._create_changelog(version, self._get_commit_datetime(commit))
 
-    def list(self):
+    def list_(self):
         branch = basename(self.verseek_head or self.head)
 
         commits = self.git.rev_list(branch)
@@ -294,7 +294,7 @@ class Sumo(Git):
                       for commit in commits]
 
         versions = [parse_changelog(changelog) for changelog in changelogs]
-        return list(zip(versions, commits))
+        return list_(zip(versions, commits))
 
     def _checkout(self, arg):
         orig_cwd = os.getcwd()
@@ -321,9 +321,9 @@ def new(path):
     return Plain(path)
 
 
-def list(path):
+def list_(path):
     """List versions at path"""
-    return new(path).list()
+    return new(path)._list()
 
 
 def seek(path, version=None):
