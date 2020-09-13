@@ -14,7 +14,7 @@ If no <version> is specified, undo previous seek (restore state)
 
 Options:
   -l --list   list seekable versions
-  
+
 """
 from os.path import *  # 
 import sys
@@ -25,8 +25,10 @@ import verseek_lib as verseek
 
 @help.usage(__doc__)
 def usage():
-    print("Syntax: %s -l /path/to/debian-source" % sys.argv[0], file=sys.stderr)
-    print("Syntax: %s /path/to/debian-source [ <version> ]" % sys.argv[0], file=sys.stderr)
+    print("Syntax: {} -l /path/to/debian-source".format(sys.argv[0]),
+          file=sys.stderr)
+    print("Syntax: {} /path/to/debian-source [<version>]".format(sys.argv[0]),
+          file=sys.stderr)
 
 
 def fatal(s):
@@ -39,7 +41,7 @@ def list(path):
         versions = verseek.list(path)
     except verseek.Error as e:
         fatal(e)
-        
+
     for version in versions:
         print(version)
 
@@ -63,24 +65,24 @@ def main():
     srcpath = args[0]
     if not isdir(srcpath):
         fatal("no such directory `%s'" % srcpath)
-        
+
     for opt, val in opts:
         if opt == '-h':
             usage()
 
         if opt in ('-l', '--list'):
             return list(srcpath)
-            
+
     try:
         version = args[1]
         if version in ('-l', '--list'):
             return list(srcpath)
-        
+
     except IndexError:
         version = None
 
     seek(srcpath, version)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
