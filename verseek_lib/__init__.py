@@ -12,13 +12,12 @@ from os.path import *  #
 import os
 import re
 import datetime
-
-from executil import system
-
-import git
-#from pyproject.autoversion.autoversion import Autoversion
-
 import locale
+import subprocess
+
+import gitwrapper as git
+from autoversion import Autoversion
+#from pyproject.autoversion.autoversion import Autoversion
 
 
 class LocaleAs(object):
@@ -299,10 +298,8 @@ class Sumo(Git):
     def _checkout(self, arg):
         orig_cwd = os.getcwd()
         os.chdir(self.git.path)
-        try:
-            system("sumo-checkout", arg)
-        finally:
-            os.chdir(orig_cwd)
+        subprocess.run(["sumo-checkout", arg])
+        os.chdir(orig_cwd)
 
 
 def new(path):
