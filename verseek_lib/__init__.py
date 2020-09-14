@@ -16,8 +16,7 @@ import locale
 import subprocess
 
 import gitwrapper as git
-from autoversion import Autoversion
-#from pyproject.autoversion.autoversion import Autoversion
+from autoversion_lib import Autoversion
 
 
 class LocaleAs(object):
