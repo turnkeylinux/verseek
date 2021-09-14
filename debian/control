@@ -6,6 +6,7 @@ Build-Depends:
  debhelper (>= 10),
  python3-all (>= 3.5~),
  autoversion2,
+ dh-python
 Standards-Version: 4.0.0
 X-Python-Version: >= 2.6
 
