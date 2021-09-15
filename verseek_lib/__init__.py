@@ -22,6 +22,7 @@ from autoversion_lib import Autoversion
 Locale = Tuple[Optional[str], Optional[str]]
 LocaleIn = Union[Locale, Optional[str]]
 
+
 class LocaleAs:
 
     old_locale: Locale
@@ -53,9 +54,9 @@ def parse_changelog(changelog: str) -> Optional[str]:
         the most recent version as a string or None
     """
     for line in changelog.split("\n"):
-        m = re.match(r'^\w[-+0-9a-z.]* \(([^\(\) \t]+)\)(?:\s+[-+0-9a-z.]+)+\;',
-                     line,
-                     re.I)
+        m = re.match(
+            r"^\w[-+0-9a-z.]* \(([^\(\) \t]+)\)(?:\s+[-+0-9a-z.]+)+\;", line, re.I
+        )
         if m:
             return m.group(1)
 
@@ -78,7 +79,6 @@ class Base(Generic[AnyStr]):
         if not isdir(path):
             raise VerseekError(f"no such directory `{path}'")
 
-
         self.path = path
         if isinstance(path, str):
             self.path_changelog = join(self.path, "debian/changelog")
@@ -87,17 +87,15 @@ class Base(Generic[AnyStr]):
             self.path_changelog = join(self.path, b"debian/changelog")
             self.path_control = join(self.path, b"debian/control")
 
-
         if not exists(self.path_control):
-            raise VerseekError(
-                    f"missing debian/control file `{self.path_control}'")
+            raise VerseekError(f"missing debian/control file `{self.path_control}'")
 
     def list_versions(self) -> List[str]:
-        ''' Returns a list of versions for this project '''
+        """ Returns a list of versions for this project """
         raise NotImplementedError()
 
     def seek_version(self, version=None):
-        ''' Attempts to checkout a given version of this project '''
+        """ Attempts to checkout a given version of this project """
         raise NotImplementedError()
 
 
@@ -111,29 +109,32 @@ class Plain(Base):
         path_changelog: a bytes or string path to the `debian/changelog` file
         path_control: a bytes or string path to the `debian/control` file
     """
+
     def _get_version(self) -> str:
         changelogfile = join(self.path, "debian/changelog")
         if not exists(changelogfile):
-            raise VerseekError("no such file or directory `{}'"
-                               "".format(changelogfile))
+            raise VerseekError(
+                "no such file or directory `{}'" "".format(changelogfile)
+            )
 
-        with open(changelogfile, 'r') as fob:
+        with open(changelogfile, "r") as fob:
             version = parse_changelog(fob.read())
         if not version:
-            raise VerseekError("can't parse version from `{}'"
-                               "".format(changelogfile))
+            raise VerseekError("can't parse version from `{}'" "".format(changelogfile))
 
         return version
 
     def list_versions(self) -> List[str]:
-        ''' Returns a list of versions for this project '''
+        """ Returns a list of versions for this project """
         return [self._get_version()]
 
-    def seek_version(self, version: Optional[str]=None):
-        ''' Attempts to checkout a given version of this project '''
+    def seek_version(self, version: Optional[str] = None):
+        """ Attempts to checkout a given version of this project """
         if version and self._get_version() != version:
-            raise VerseekError("can't seek to nonexistent version `{}'"
-                               "".format(version))
+            raise VerseekError(
+                "can't seek to nonexistent version `{}'" "".format(version)
+            )
+
 
 class Git(Base):
     """Version seeking class for git repos
@@ -144,6 +145,7 @@ class Git(Base):
         path_changelog: a bytes or string path to the `debian/changelog` file
         path_control: a bytes or string path to the `debian/control` file
     """
+
     class Head:
         ref = "HEAD"
 
@@ -187,8 +189,8 @@ class Git(Base):
         directory = os.fspath(directory)
         directory = abspath(directory)
 
-        root = '/' if isinstance(directory, str) else b'/'
-        git_dir = '.git' if isinstance(directory, str) else b'.git'
+        root = "/" if isinstance(directory, str) else b"/"
+        git_dir = ".git" if isinstance(directory, str) else b".git"
 
         while True:
             if isdir(join(directory, git_dir)):
@@ -208,19 +210,18 @@ class Git(Base):
         path_changelog = relpath(self.path_changelog, self.git.path)
         commits = self.git.rev_list(branch, path_changelog)
 
-        changelogs = [self.git.cat_file("blob",
-                                        commit + ":" + path_changelog)
-                      for commit in commits]
+        changelogs = [
+            self.git.cat_file("blob", commit + ":" + path_changelog)
+            for commit in commits
+        ]
 
         versions = [parse_changelog(changelog) for changelog in changelogs]
-        #return list(filter(lambda x:x[0], zip(versions, commits)))
         return [
-            (version, commit) for (version, commit) in zip(versions, commits)
-                if version
+            (version, commit) for (version, commit) in zip(versions, commits) if version
         ]
 
     def list_versions(self) -> List[str]:
-        ''' Returns a list of versions for this project '''
+        """ Returns a list of versions for this project """
         return [version for version, commit in self._list_versions()]
 
     def _checkout(self, arg):
@@ -240,8 +241,8 @@ class Git(Base):
 
         self._checkout(commit)
 
-    def seek_version(self, version: Optional[str]=None):
-        ''' Attempts to checkout a given version of this project '''
+    def seek_version(self, version: Optional[str] = None):
+        """ Attempts to checkout a given version of this project """
         if not version:
             self._seek_restore()
         else:
@@ -255,45 +256,53 @@ class Git(Base):
 
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
+
     def __init__(self, path: os.PathLike):
         Git.__init__(self, path)
         self.autoversion = Autoversion(path, precache=True)
 
     def _get_commit_datetime(self, commit: str) -> datetime.datetime:
         output = self.git.cat_file("commit", commit)
-        timestamp = int(re.search(r' (\d{10}) ', output).group(1))
+        timestamp = int(re.search(r" (\d{10}) ", output).group(1))
         return datetime.datetime.utcfromtimestamp(timestamp)
 
     def _create_changelog(self, version, entry_datetime: datetime.datetime):
         release = "UNRELEASED"
 
         def parse_control(path):
-            with open(path, 'r') as fob:
-                lines = (line.rstrip() for line in fob
-                    if not line.startswith(' '))
-            return dict([re.split(r"\s*:\s*", line, 1)
-                         for line in lines
-                         if line and ':' in line])
+            with open(path, "r") as fob:
+                lines = (line.rstrip() for line in fob if not line.startswith(" "))
+            return dict(
+                [
+                    re.split(r"\s*:\s*", line, 1)
+                    for line in lines
+                    if line and ":" in line
+                ]
+            )
 
         control = parse_control(self.path_control)
 
-        with LocaleAs(locale.LC_TIME, 'C'):
-            with open(self.path_changelog, 'w') as fob:
-                print("{} ({}) {}; urgency=low"
-                      "".format(control['Source'],
-                                version,
-                                release),
-                      file=fob)
+        with LocaleAs(locale.LC_TIME, "C"):
+            with open(self.path_changelog, "w") as fob:
+                print(
+                    "{} ({}) {}; urgency=low"
+                    "".format(control["Source"], version, release),
+                    file=fob,
+                )
                 print(file=fob)
                 print("  * undocumented", file=fob)
                 print(file=fob)
-                print(" --  {}  {}"
-                      "".format(control['Maintainer'],
-                                entry_datetime.strftime("%a, %d %b %Y %H:%M:%S +0000")),
-                      file=fob)
+                print(
+                    " --  {}  {}"
+                    "".format(
+                        control["Maintainer"],
+                        entry_datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"),
+                    ),
+                    file=fob,
+                )
 
-    def seek_version(self, version: Optional[str]=None):
-        ''' Attempts to checkout a given version of this project '''
+    def seek_version(self, version: Optional[str] = None):
+        """ Attempts to checkout a given version of this project """
         if not version:
             if exists(self.path_changelog):
                 os.remove(self.path_changelog)
@@ -305,12 +314,12 @@ class GitSingle(Git):
             self._create_changelog(version, self._get_commit_datetime(commit))
 
     def list_versions(self) -> List[str]:
-        ''' Returns a list of versions for this project '''
+        """ Returns a list of versions for this project """
         branch = basename(self.verseek_head or self.head)
 
         commits = self.git.rev_list(branch)
-        return [self.autoversion.commit2version(commit)
-                for commit in commits]
+        return [self.autoversion.commit2version(commit) for commit in commits]
+
 
 def new(path: os.PathLike) -> Base:
     """Return instance appropriate for path
@@ -348,7 +357,7 @@ def list_versions(path: os.PathLike) -> List[str]:
     return new(path).list_versions()
 
 
-def seek_version(path: os.PathLike, version: Optional[str]=None):
+def seek_version(path: os.PathLike, version: Optional[str] = None):
     """Seek to <version> in Debian source package at <path>.
     If <version> is None, unseek.
 
