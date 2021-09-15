@@ -46,10 +46,10 @@ class VerseekError(Exception):
 
 def parse_changelog(changelog: str) -> Optional[str]:
     """Parses the contents of the changelog
-    
+
     Args:
         changelog: raw text contents of a changelog file
-    
+
     Returns:
         the most recent version as a string or None
     """
@@ -65,7 +65,7 @@ def parse_changelog(changelog: str) -> Optional[str]:
 
 class Base(Generic[AnyStr]):
     """Version seeking base class
-    
+
     Attributes:
         path_changelog: a bytes or string path to the `debian/changelog` file
         path_control: a bytes or string path to the `debian/control` file
@@ -104,7 +104,7 @@ class Plain(Base):
 
     Since plain directories don't actually support history,
     list just shows the latest version and seek is a dummy function.
-    
+
     Attributes:
         path_changelog: a bytes or string path to the `debian/changelog` file
         path_control: a bytes or string path to the `debian/control` file
@@ -138,9 +138,9 @@ class Plain(Base):
 
 class Git(Base):
     """Version seeking class for git repos
-    
+
     Uses a mixture of git tags and commit-ids to generate versions
-    
+
     Attributes:
         path_changelog: a bytes or string path to the `debian/changelog` file
         path_control: a bytes or string path to the `debian/control` file
@@ -323,7 +323,7 @@ class GitSingle(Git):
 
 def new(path: os.PathLike) -> Base:
     """Return instance appropriate for path
-    
+
     Args:
         path: path to project as any os.PathLike (including str, bytes,
               pathlib.Path, etc.)
@@ -346,7 +346,7 @@ def new(path: os.PathLike) -> Base:
 
 def list_versions(path: os.PathLike) -> List[str]:
     """List versions of project found at path
-    
+
     Args:
         path: path to project as any os.PathLike (including str, bytes,
               pathlib.Path, etc.)
