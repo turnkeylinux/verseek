@@ -8,53 +8,63 @@
 # Free Software Foundation; either version 3 of the License, or (at your
 # option) any later version.
 
-from os.path import *  # 
 import sys
 import argparse
+from os.path import isdir
 
 import verseek_lib as verseek
 
 
-def fatal(s):
-    print("error: " + str(s), file=sys.stderr)
+def fatal(msg):
+    print("error: " + str(msg), file=sys.stderr)
     sys.exit(1)
 
 
-def list_(path):
+def list_versions(path: str):
     try:
-        versions = verseek.list_(path)
-    except verseek.VerseekError as e:
-        fatal(e)
+        versions = verseek.list_versions(path)
+    except verseek.VerseekError as exc:
+        fatal(exc)
 
     for version in versions:
         print(version)
 
 
-def seek(path, version):
+def seek_version(path, version):
     try:
-        verseek.seek(path, version)
-    except verseek.VerseekError as e:
-        fatal(e)
+        verseek.seek_version(path, version)
+    except verseek.VerseekError as exc:
+        fatal(exc)
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Seek to available versions'
-                                                 ' in Debian source package')
-    parser.add_argument('-l', '--list', action='store_true', default=False,
-                        help='list seekable versions')
-    parser.add_argument('srcpath', help='Path to source')
-    parser.add_argument('version', nargs='?', default=None,
-                        help='If no version specified, undo previous seek'
-                             ' (restore state)')
+    parser = argparse.ArgumentParser(
+        description="List or Seek to a given version of a debian package"
+        "given a path to the source"
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        action="store_true",
+        default=False,
+        help="list seekable versions",
+    )
+    parser.add_argument("srcpath", help="Path to source")
+    parser.add_argument(
+        "version",
+        nargs="?",
+        default=None,
+        help="If no version specified, undo previous seek" " (restore state)",
+    )
     args = parser.parse_args()
     srcpath = args.srcpath
     if not isdir(args.srcpath):
         fatal("no such directory `{}'".format(args.srcpath))
 
     if args.list:
-        return list_(srcpath)
-
-    seek(args.srcpath, args.version)
+        list_versions(srcpath)
+    else:
+        seek_version(args.srcpath, args.version)
 
 
 if __name__ == "__main__":
