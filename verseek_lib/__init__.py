@@ -271,7 +271,7 @@ class GitSingle(Git):
 
         def parse_control(path):
             with open(path, "r") as fob:
-                lines = (line.rstrip() for line in fob if not line.startswith(" "))
+                lines = [line.rstrip() for line in fob if not line.startswith(" ")]
             return dict(
                 [
                     re.split(r"\s*:\s*", line, 1)
