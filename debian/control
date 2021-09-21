@@ -5,10 +5,10 @@ Maintainer: Jeremy Davis <jeremy@turnkeylinux.org>
 Build-Depends:
  debhelper (>= 10),
  python3-all (>= 3.5~),
- autoversion2,
+ autoversion (>= 0.10.0),
  dh-python
 Standards-Version: 4.0.0
-X-Python-Version: >= 2.6
+X-Python-Version: >= 3.6
 
 Package: verseek
 Architecture: any
@@ -16,7 +16,5 @@ Depends:
  git (>= 1:2.1.4),
  ${misc:Depends},
  ${shlibs:Depends},
- autoversion2,
-Recommends:
- sumo,
+ autoversion (>= 0.10.0)
 Description: Abstract interface for listing/accessing versions of Debian sources
