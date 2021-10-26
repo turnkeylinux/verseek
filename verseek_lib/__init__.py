@@ -14,29 +14,40 @@ import re
 import datetime
 import locale
 import subprocess
-from typing import Optional, List, Generic, Union, AnyStr, Tuple
+from typing import (
+        Optional, List, Generic, Union, AnyStr, Tuple, TypeVar, Iterable, Type,
+        Dict
+)
+from types import TracebackType
 
 import gitwrapper as git
 from autoversion_lib import Autoversion
 
-Locale = Tuple[Optional[str], Optional[str]]
-LocaleIn = Union[Locale, Optional[str]]
+Locale = Optional[Union[str, Iterable[str]]]
+AnyPath = TypeVar('AnyPath', str, os.PathLike)
 
+def fspath(p: AnyPath) -> str:
+    return os.fspath(p)
 
 class LocaleAs:
 
     old_locale: Locale
 
-    def __init__(self, category: int, new_locale: LocaleIn):
+    def __init__(self, category: int, new_locale: Locale):
         self.category = category
         self.new_locale = new_locale
         self.old_locale = None
 
-    def __enter__(self):
+    def __enter__(self) -> None:
         self.old_locale = locale.getlocale(self.category)
         locale.setlocale(self.category, self.new_locale)
 
-    def __exit__(self, type, value, traceback):
+    def __exit__(
+            self,
+            type: Optional[Type[BaseException]],
+            value: Optional[BaseException],
+            traceback: Optional[TracebackType]
+    ) -> None:
         locale.setlocale(self.category, self.old_locale)
 
 
@@ -63,29 +74,25 @@ def parse_changelog(changelog: str) -> Optional[str]:
     return None
 
 
-class Base(Generic[AnyStr]):
+class Base(Generic[AnyPath]):
     """Version seeking base class
 
     Attributes:
-        path_changelog: a bytes or string path to the `debian/changelog` file
-        path_control: a bytes or string path to the `debian/control` file
+        path_changelog: a path to the `debian/changelog` file
+        path_control: a path to the `debian/control` file
     """
 
-    path_changelog: AnyStr
-    path_control: AnyStr
+    path_changelog: str
+    path_control: str
 
-    def __init__(self, path: os.PathLike):
-        path = os.fspath(path)
-        if not isdir(path):
+    def __init__(self, path: AnyPath):
+        spath = fspath(path)
+        if not isdir(spath):
             raise VerseekError(f"no such directory `{path}'")
 
-        self.path = path
-        if isinstance(path, str):
-            self.path_changelog = join(self.path, "debian/changelog")
-            self.path_control = join(self.path, "debian/control")
-        elif isinstance(path, bytes):
-            self.path_changelog = join(self.path, b"debian/changelog")
-            self.path_control = join(self.path, b"debian/control")
+        self.path = spath
+        self.path_changelog = join(self.path, "debian/changelog")
+        self.path_control = join(self.path, "debian/control")
 
         if not exists(self.path_control):
             raise VerseekError(f"missing debian/control file `{self.path_control}'")
@@ -94,7 +101,7 @@ class Base(Generic[AnyStr]):
         """ Returns a list of versions for this project """
         raise NotImplementedError()
 
-    def seek_version(self, version=None):
+    def seek_version(self, version: Optional[str]=None) -> None:
         """ Attempts to checkout a given version of this project """
         raise NotImplementedError()
 
@@ -128,7 +135,7 @@ class Plain(Base):
         """ Returns a list of versions for this project """
         return [self._get_version()]
 
-    def seek_version(self, version: Optional[str] = None):
+    def seek_version(self, version: Optional[str] = None) -> None:
         """ Attempts to checkout a given version of this project """
         if version and self._get_version() != version:
             raise VerseekError(
@@ -149,7 +156,7 @@ class Git(Base):
     class Head:
         ref = "HEAD"
 
-        def __get__(self, obj, type):
+        def __get__(self, obj: 'Git', type: Type['Git']) -> str:
             try:
                 return obj.git.symbolic_ref(self.ref)
             except git.GitError:
@@ -158,13 +165,13 @@ class Git(Base):
     class VerseekHead:
         ref = "VERSEEK_HEAD"
 
-        def __get__(self, obj, type):
+        def __get__(self, obj: 'Git', type: Type['Git']) -> Optional[str]:
             try:
                 return obj.git.symbolic_ref(self.ref)
             except git.GitError:
                 return None
 
-        def __set__(self, obj, val):
+        def __set__(self, obj: 'Git', val: Optional[str]) -> None:
             if val is None:
                 ref_path = join(obj.path, ".git", self.ref)
                 if exists(ref_path):
@@ -176,7 +183,7 @@ class Git(Base):
     head = Head()
 
     @staticmethod
-    def get_git_root(directory: os.PathLike) -> Optional[os.PathLike]:
+    def get_git_root(directory: AnyPath) -> Optional[AnyPath]:
         """Walk up dir until we get the gitdir.
 
         Args:
@@ -186,11 +193,11 @@ class Git(Base):
             a path to the `.git` directory of a git repo or `None` if no
             `.git` directory is found
         """
-        directory = os.fspath(directory)
-        directory = abspath(directory)
+        sdirectory = fspath(directory)
+        sdirectory = abspath(sdirectory)
 
-        root = "/" if isinstance(directory, str) else b"/"
-        git_dir = ".git" if isinstance(directory, str) else b".git"
+        root = "/"
+        git_dir = ".git"
 
         while True:
             if isdir(join(directory, git_dir)):
@@ -200,9 +207,11 @@ class Git(Base):
             if directory == root:
                 return None
 
-    def __init__(self, path: os.PathLike):
+    def __init__(self, path: AnyPath):
         Base.__init__(self, path)
-        self.git = git.Git(self.get_git_root(self.path))
+        git_root = self.get_git_root(self.path)
+        assert git_root is not None
+        self.git = git.Git(git_root)
 
     def _list_versions(self) -> List[Tuple[str, str]]:
         branch = basename(self.verseek_head or self.head)
@@ -224,10 +233,10 @@ class Git(Base):
         """ Returns a list of versions for this project """
         return [version for version, commit in self._list_versions()]
 
-    def _checkout(self, arg):
+    def _checkout(self, arg: str) -> None:
         self.git.checkout("-q", "-f", arg)
 
-    def _seek_restore(self):
+    def _seek_restore(self) -> None:
         """restore repository to state before seek"""
         if not self.verseek_head:
             raise VerseekError("no version to seek back to")
@@ -235,13 +244,13 @@ class Git(Base):
         self._checkout(basename(self.verseek_head))
         self.verseek_head = None
 
-    def _seek_commit(self, commit):
+    def _seek_commit(self, commit: str) -> None:
         if not self.verseek_head:
             self.verseek_head = self.head
 
         self._checkout(commit)
 
-    def seek_version(self, version: Optional[str] = None):
+    def seek_version(self, version: Optional[str] = None) -> None:
         """ Attempts to checkout a given version of this project """
         if not version:
             self._seek_restore()
@@ -257,28 +266,32 @@ class Git(Base):
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
 
-    def __init__(self, path: os.PathLike):
+    def __init__(self, path: AnyPath):
         Git.__init__(self, path)
-        self.autoversion = Autoversion(path, precache=True)
+        self.autoversion = Autoversion(os.fspath(path), precache=True)
 
     def _get_commit_datetime(self, commit: str) -> datetime.datetime:
         output = self.git.cat_file("commit", commit)
-        timestamp = int(re.search(r" (\d{10}) ", output).group(1))
+        m = re.search(r" (\d{10}) ", output)
+        assert m is not None
+        timestamp = int(m.group(1))
         return datetime.datetime.utcfromtimestamp(timestamp)
 
-    def _create_changelog(self, version, entry_datetime: datetime.datetime):
+    def _create_changelog(
+            self, version: str, entry_datetime: datetime.datetime
+    ) -> None:
         release = "UNRELEASED"
 
-        def parse_control(path):
+        def parse_control(path: str) -> Dict[str, str]:
             with open(path, "r") as fob:
                 lines = [line.rstrip() for line in fob if not line.startswith(" ")]
-            return dict(
-                [
+            return {
+                    k: v for (k, v) in [
                     re.split(r"\s*:\s*", line, 1)
                     for line in lines
                     if line and ":" in line
                 ]
-            )
+            }
 
         control = parse_control(self.path_control)
 
@@ -301,7 +314,7 @@ class GitSingle(Git):
                     file=fob,
                 )
 
-    def seek_version(self, version: Optional[str] = None):
+    def seek_version(self, version: Optional[str] = None) -> None:
         """ Attempts to checkout a given version of this project """
         if not version:
             if exists(self.path_changelog):
@@ -321,7 +334,7 @@ class GitSingle(Git):
         return [self.autoversion.commit2version(commit) for commit in commits]
 
 
-def new(path: os.PathLike) -> Base:
+def new(path: AnyPath) -> Base:
     """Return instance appropriate for path
 
     Args:
@@ -344,7 +357,7 @@ def new(path: os.PathLike) -> Base:
     return Plain(path)
 
 
-def list_versions(path: os.PathLike) -> List[str]:
+def list_versions(path: AnyPath) -> List[str]:
     """List versions of project found at path
 
     Args:
@@ -357,7 +370,7 @@ def list_versions(path: os.PathLike) -> List[str]:
     return new(path).list_versions()
 
 
-def seek_version(path: os.PathLike, version: Optional[str] = None):
+def seek_version(path: AnyPath, version: Optional[str] = None) -> None:
     """Seek to <version> in Debian source package at <path>.
     If <version> is None, unseek.
 
