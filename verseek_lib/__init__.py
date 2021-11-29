@@ -268,7 +268,7 @@ class GitSingle(Git):
 
     def __init__(self, path: AnyPath):
         Git.__init__(self, path)
-        self.autoversion = Autoversion(os.fspath(path), precache=True)
+        self.autoversion = Autoversion(fspath(path), precache=True)
 
     def _get_commit_datetime(self, commit: str) -> datetime.datetime:
         output = self.git.cat_file("commit", commit)
