@@ -10,7 +10,7 @@ Build-Depends:
 Standards-Version: 4.0.0
 
 Package: verseek
-Architecture: any
+Architecture: all
 Depends:
  git (>= 1:2.1.4),
  ${misc:Depends},
