@@ -7,15 +7,14 @@
 # Free Software Foundation; either version 3 of the License, or (at your
 # option) any later version.
 
-from os.path import join, isdir, exists, abspath, relpath, basename
-
-import os
-import re
 import datetime
 import locale
-from typing import Generic, TypeVar
-from types import TracebackType
+import os
+import re
 from collections.abc import Iterable
+from os.path import abspath, basename, exists, isdir, join, relpath
+from types import TracebackType
+from typing import Generic, TypeVar
 
 import gitwrapper as git
 from autoversion_lib import Autoversion
