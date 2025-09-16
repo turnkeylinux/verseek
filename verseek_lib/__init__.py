@@ -13,17 +13,16 @@ import os
 import re
 import datetime
 import locale
-import subprocess
-from typing import (
-        Optional, List, Generic, Union, AnyStr, Tuple, TypeVar, Iterable, Type,
-        Dict
-)
+from typing import Generic, TypeVar
 from types import TracebackType
+from collections.abc import Iterable
 
 import gitwrapper as git
 from autoversion_lib import Autoversion
 
-Locale = Optional[Union[str, Iterable[str]]]
+Locale = str | Iterable[str] | None
+# should probably be: ?
+#Locale = tuple[str | None, str | None] | None
 AnyPath = TypeVar('AnyPath', str, os.PathLike)
 
 def fspath(p: AnyPath) -> str:
@@ -33,20 +32,23 @@ class LocaleAs:
 
     old_locale: Locale
 
-    def __init__(self, category: int, new_locale: Locale):
+    def __init__(self, category: int, new_locale: Locale) -> None:
         self.category = category
         self.new_locale = new_locale
         self.old_locale = None
 
     def __enter__(self) -> None:
+        # expression has type "Tuple[Optional[str], Optional[str]]",
+        # variable has type "Union[str, Iterable[str], None]
+        # see commented 'Locale =' line above
         self.old_locale = locale.getlocale(self.category)
         locale.setlocale(self.category, self.new_locale)
 
     def __exit__(
             self,
-            type: Optional[Type[BaseException]],
-            value: Optional[BaseException],
-            traceback: Optional[TracebackType]
+            type: type[BaseException] | None,
+            value: BaseException | None,
+            traceback: TracebackType | None,
     ) -> None:
         locale.setlocale(self.category, self.old_locale)
 
@@ -55,7 +57,7 @@ class VerseekError(Exception):
     pass
 
 
-def parse_changelog(changelog: str) -> Optional[str]:
+def parse_changelog(changelog: str) -> str | None:
     """Parses the contents of the changelog
 
     Args:
@@ -66,7 +68,9 @@ def parse_changelog(changelog: str) -> Optional[str]:
     """
     for line in changelog.split("\n"):
         m = re.match(
-            r"^\w[-+0-9a-z.]* \(([^\(\) \t]+)\)(?:\s+[-+0-9a-z.]+)+\;", line, re.I
+            r"^\w[-+0-9a-z.]* \(([^\(\) \t]+)\)(?:\s+[-+0-9a-z.]+)+\;",
+            line,
+            re.I
         )
         if m:
             return m.group(1)
@@ -85,7 +89,7 @@ class Base(Generic[AnyPath]):
     path_changelog: str
     path_control: str
 
-    def __init__(self, path: AnyPath):
+    def __init__(self, path: AnyPath) -> None:
         spath = fspath(path)
         if not isdir(spath):
             raise VerseekError(f"no such directory `{path}'")
@@ -95,13 +99,15 @@ class Base(Generic[AnyPath]):
         self.path_control = join(self.path, "debian/control")
 
         if not exists(self.path_control):
-            raise VerseekError(f"missing debian/control file `{self.path_control}'")
+            raise VerseekError(
+                f"missing debian/control file `{self.path_control}'"
+            )
 
-    def list_versions(self) -> List[str]:
+    def list_versions(self) -> list[str]:
         """ Returns a list of versions for this project """
         raise NotImplementedError()
 
-    def seek_version(self, version: Optional[str]=None) -> None:
+    def seek_version(self, version: str | None = None) -> None:
         """ Attempts to checkout a given version of this project """
         raise NotImplementedError()
 
@@ -120,26 +126,24 @@ class Plain(Base):
     def _get_version(self) -> str:
         changelogfile = join(self.path, "debian/changelog")
         if not exists(changelogfile):
-            raise VerseekError(
-                "no such file or directory `{}'" "".format(changelogfile)
-            )
+            raise VerseekError("no such file or directory `{changelogfile}'")
 
-        with open(changelogfile, "r") as fob:
+        with open(changelogfile) as fob:
             version = parse_changelog(fob.read())
         if not version:
-            raise VerseekError("can't parse version from `{}'" "".format(changelogfile))
+            raise VerseekError("can't parse version from `{changelogfile}'")
 
         return version
 
-    def list_versions(self) -> List[str]:
+    def list_versions(self) -> list[str]:
         """ Returns a list of versions for this project """
         return [self._get_version()]
 
-    def seek_version(self, version: Optional[str] = None) -> None:
+    def seek_version(self, version: str | None = None) -> None:
         """ Attempts to checkout a given version of this project """
         if version and self._get_version() != version:
             raise VerseekError(
-                "can't seek to nonexistent version `{}'" "".format(version)
+                f"can't seek to nonexistent version `{version}'"
             )
 
 
@@ -156,22 +160,22 @@ class Git(Base):
     class Head:
         ref = "HEAD"
 
-        def __get__(self, obj: 'Git', type: Type['Git']) -> str:
+        def __get__(self, obj: 'Git', type: type['Git']) -> str:
             try:
                 return obj.git.symbolic_ref(self.ref)
-            except git.GitError:
-                raise VerseekError("HEAD isn't pointing to a branch")
+            except git.GitError as e:
+                raise VerseekError("HEAD isn't pointing to a branch") from e
 
     class VerseekHead:
         ref = "VERSEEK_HEAD"
 
-        def __get__(self, obj: 'Git', type: Type['Git']) -> Optional[str]:
+        def __get__(self, obj: 'Git', type: type['Git']) -> str | None:
             try:
                 return obj.git.symbolic_ref(self.ref)
             except git.GitError:
                 return None
 
-        def __set__(self, obj: 'Git', val: Optional[str]) -> None:
+        def __set__(self, obj: 'Git', val: str | None) -> None:
             if val is None:
                 ref_path = join(obj.path, ".git", self.ref)
                 if exists(ref_path):
@@ -183,7 +187,7 @@ class Git(Base):
     head = Head()
 
     @staticmethod
-    def get_git_root(directory: AnyPath) -> Optional[AnyPath]:
+    def get_git_root(directory: AnyPath) -> AnyPath | None:
         """Walk up dir until we get the gitdir.
 
         Args:
@@ -207,13 +211,13 @@ class Git(Base):
             if directory == root:
                 return None
 
-    def __init__(self, path: AnyPath):
+    def __init__(self, path: AnyPath) -> None:
         Base.__init__(self, path)
         git_root = self.get_git_root(self.path)
         assert git_root is not None
         self.git = git.Git(git_root)
 
-    def _list_versions(self) -> List[Tuple[str, str]]:
+    def _list_versions(self) -> list[tuple[str, str]]:
         branch = basename(self.verseek_head or self.head)
 
         path_changelog = relpath(self.path_changelog, self.git.path)
@@ -226,10 +230,12 @@ class Git(Base):
 
         versions = [parse_changelog(changelog) for changelog in changelogs]
         return [
-            (version, commit) for (version, commit) in zip(versions, commits) if version
+            (version, commit)
+            for (version, commit) in zip(versions, commits)
+            if version
         ]
 
-    def list_versions(self) -> List[str]:
+    def list_versions(self) -> list[str]:
         """ Returns a list of versions for this project """
         return [version for version, commit in self._list_versions()]
 
@@ -250,14 +256,14 @@ class Git(Base):
 
         self._checkout(commit)
 
-    def seek_version(self, version: Optional[str] = None) -> None:
+    def seek_version(self, version: str | None = None) -> None:
         """ Attempts to checkout a given version of this project """
         if not version:
             self._seek_restore()
         else:
             versions = dict(self._list_versions())
             if version not in versions:
-                raise VerseekError("no such version `{}'".format(version))
+                raise VerseekError(f"no such version `{version}'")
 
             commit = versions[version]
             self._seek_commit(commit)
@@ -266,7 +272,7 @@ class Git(Base):
 class GitSingle(Git):
     """version seeking class for git repository containing one package"""
 
-    def __init__(self, path: AnyPath):
+    def __init__(self, path: AnyPath) -> None:
         Git.__init__(self, path)
         self.autoversion = Autoversion(fspath(path), precache=True)
 
@@ -282,12 +288,14 @@ class GitSingle(Git):
     ) -> None:
         release = "UNRELEASED"
 
-        def parse_control(path: str) -> Dict[str, str]:
-            with open(path, "r") as fob:
-                lines = [line.rstrip() for line in fob if not line.startswith(" ")]
+        def parse_control(path: str) -> dict[str, str]:
+            with open(path) as fob:
+                lines = [
+                    line.rstrip() for line in fob if not line.startswith(" ")
+                ]
             return {
                     k: v for (k, v) in [
-                    re.split(r"\s*:\s*", line, 1)
+                    re.split(r"\s*:\s*", line, maxsplit=1)
                     for line in lines
                     if line and ":" in line
                 ]
@@ -314,7 +322,7 @@ class GitSingle(Git):
                     file=fob,
                 )
 
-    def seek_version(self, version: Optional[str] = None) -> None:
+    def seek_version(self, version: str | None = None) -> None:
         """ Attempts to checkout a given version of this project """
         if not version:
             if exists(self.path_changelog):
@@ -326,7 +334,7 @@ class GitSingle(Git):
             self._seek_commit(commit)
             self._create_changelog(version, self._get_commit_datetime(commit))
 
-    def list_versions(self) -> List[str]:
+    def list_versions(self) -> list[str]:
         """ Returns a list of versions for this project """
         branch = basename(self.verseek_head or self.head)
 
@@ -357,7 +365,7 @@ def new(path: AnyPath) -> Base:
     return Plain(path)
 
 
-def list_versions(path: AnyPath) -> List[str]:
+def list_versions(path: AnyPath) -> list[str]:
     """List versions of project found at path
 
     Args:
@@ -370,7 +378,7 @@ def list_versions(path: AnyPath) -> List[str]:
     return new(path).list_versions()
 
 
-def seek_version(path: AnyPath, version: Optional[str] = None) -> None:
+def seek_version(path: AnyPath, version: str | None = None) -> None:
     """Seek to <version> in Debian source package at <path>.
     If <version> is None, unseek.
 

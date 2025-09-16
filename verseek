@@ -11,16 +11,17 @@
 import sys
 import argparse
 from os.path import isdir
+from typing import NoReturn
 
 import verseek_lib as verseek
 
 
-def fatal(msg):
-    print("error: " + str(msg), file=sys.stderr)
+def fatal(msg: str | verseek.VerseekError) -> NoReturn:
+    print(f"error: {msg}", file=sys.stderr)
     sys.exit(1)
 
 
-def list_versions(path: str):
+def list_versions(path: str) -> None:
     try:
         versions = verseek.list_versions(path)
     except verseek.VerseekError as exc:
@@ -30,14 +31,14 @@ def list_versions(path: str):
         print(version)
 
 
-def seek_version(path, version):
+def seek_version(path: str, version: str) -> None:
     try:
         verseek.seek_version(path, version)
     except verseek.VerseekError as exc:
         fatal(exc)
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description="List or Seek to a given version of a debian package"
         "given a path to the source"
@@ -59,7 +60,7 @@ def main():
     args = parser.parse_args()
     srcpath = args.srcpath
     if not isdir(args.srcpath):
-        fatal("no such directory `{}'".format(args.srcpath))
+        fatal(f"no such directory `{args.srcpath}'")
 
     if args.list:
         list_versions(srcpath)
