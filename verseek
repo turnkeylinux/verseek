@@ -55,7 +55,7 @@ def main() -> None:
         "version",
         nargs="?",
         default=None,
-        help="If no version specified, undo previous seek" " (restore state)",
+        help="If no version specified, undo previous seek (restore state)",
     )
     args = parser.parse_args()
     srcpath = args.srcpath

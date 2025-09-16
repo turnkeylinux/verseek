@@ -23,13 +23,14 @@ from autoversion_lib import Autoversion
 Locale = str | Iterable[str] | None
 # should probably be: ?
 #Locale = tuple[str | None, str | None] | None
-AnyPath = TypeVar('AnyPath', str, os.PathLike)
+AnyPath = TypeVar("AnyPath", str, os.PathLike)
+
 
 def fspath(p: AnyPath) -> str:
     return os.fspath(p)
 
-class LocaleAs:
 
+class LocaleAs:
     old_locale: Locale
 
     def __init__(self, category: int, new_locale: Locale) -> None:
@@ -45,10 +46,10 @@ class LocaleAs:
         locale.setlocale(self.category, self.new_locale)
 
     def __exit__(
-            self,
-            type: type[BaseException] | None,
-            value: BaseException | None,
-            traceback: TracebackType | None,
+        self,
+        type: type[BaseException] | None,
+        value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         locale.setlocale(self.category, self.old_locale)
 
@@ -70,7 +71,7 @@ def parse_changelog(changelog: str) -> str | None:
         m = re.match(
             r"^\w[-+0-9a-z.]* \(([^\(\) \t]+)\)(?:\s+[-+0-9a-z.]+)+\;",
             line,
-            re.I
+            re.I,
         )
         if m:
             return m.group(1)
@@ -104,11 +105,11 @@ class Base(Generic[AnyPath]):
             )
 
     def list_versions(self) -> list[str]:
-        """ Returns a list of versions for this project """
+        """Returns a list of versions for this project"""
         raise NotImplementedError()
 
     def seek_version(self, version: str | None = None) -> None:
-        """ Attempts to checkout a given version of this project """
+        """Attempts to checkout a given version of this project"""
         raise NotImplementedError()
 
 
@@ -136,15 +137,13 @@ class Plain(Base):
         return version
 
     def list_versions(self) -> list[str]:
-        """ Returns a list of versions for this project """
+        """Returns a list of versions for this project"""
         return [self._get_version()]
 
     def seek_version(self, version: str | None = None) -> None:
-        """ Attempts to checkout a given version of this project """
+        """Attempts to checkout a given version of this project"""
         if version and self._get_version() != version:
-            raise VerseekError(
-                f"can't seek to nonexistent version `{version}'"
-            )
+            raise VerseekError(f"can't seek to nonexistent version `{version}'")
 
 
 class Git(Base):
@@ -160,7 +159,7 @@ class Git(Base):
     class Head:
         ref = "HEAD"
 
-        def __get__(self, obj: 'Git', type: type['Git']) -> str:
+        def __get__(self, obj: "Git", type: type["Git"]) -> str:
             try:
                 return obj.git.symbolic_ref(self.ref)
             except git.GitError as e:
@@ -169,13 +168,13 @@ class Git(Base):
     class VerseekHead:
         ref = "VERSEEK_HEAD"
 
-        def __get__(self, obj: 'Git', type: type['Git']) -> str | None:
+        def __get__(self, obj: "Git", type: type["Git"]) -> str | None:
             try:
                 return obj.git.symbolic_ref(self.ref)
             except git.GitError:
                 return None
 
-        def __set__(self, obj: 'Git', val: str | None) -> None:
+        def __set__(self, obj: "Git", val: str | None) -> None:
             if val is None:
                 ref_path = join(obj.path, ".git", self.ref)
                 if exists(ref_path):
@@ -236,7 +235,7 @@ class Git(Base):
         ]
 
     def list_versions(self) -> list[str]:
-        """ Returns a list of versions for this project """
+        """Returns a list of versions for this project"""
         return [version for version, commit in self._list_versions()]
 
     def _checkout(self, arg: str) -> None:
@@ -257,7 +256,7 @@ class Git(Base):
         self._checkout(commit)
 
     def seek_version(self, version: str | None = None) -> None:
-        """ Attempts to checkout a given version of this project """
+        """Attempts to checkout a given version of this project"""
         if not version:
             self._seek_restore()
         else:
@@ -284,7 +283,7 @@ class GitSingle(Git):
         return datetime.datetime.utcfromtimestamp(timestamp)
 
     def _create_changelog(
-            self, version: str, entry_datetime: datetime.datetime
+        self, version: str, entry_datetime: datetime.datetime
     ) -> None:
         release = "UNRELEASED"
 
@@ -294,7 +293,8 @@ class GitSingle(Git):
                     line.rstrip() for line in fob if not line.startswith(" ")
                 ]
             return {
-                    k: v for (k, v) in [
+                k: v
+                for (k, v) in [
                     re.split(r"\s*:\s*", line, maxsplit=1)
                     for line in lines
                     if line and ":" in line
@@ -306,24 +306,22 @@ class GitSingle(Git):
         with LocaleAs(locale.LC_TIME, "C"):
             with open(self.path_changelog, "w") as fob:
                 print(
-                    "{} ({}) {}; urgency=low"
-                    "".format(control["Source"], version, release),
+                    f"{control['Source']} ({version}) {release}; urgency=low",
                     file=fob,
                 )
                 print(file=fob)
                 print("  * undocumented", file=fob)
                 print(file=fob)
+                entry_datetime_str = entry_datetime.strftime(
+                    "%a, %d %b %Y %H:%M:%S +0000"
+                )
                 print(
-                    " --  {}  {}"
-                    "".format(
-                        control["Maintainer"],
-                        entry_datetime.strftime("%a, %d %b %Y %H:%M:%S +0000"),
-                    ),
+                    f" --  {control['Maintainer']}  {entry_datetime_str}",
                     file=fob,
                 )
 
     def seek_version(self, version: str | None = None) -> None:
-        """ Attempts to checkout a given version of this project """
+        """Attempts to checkout a given version of this project"""
         if not version:
             if exists(self.path_changelog):
                 os.remove(self.path_changelog)
@@ -335,7 +333,7 @@ class GitSingle(Git):
             self._create_changelog(version, self._get_commit_datetime(commit))
 
     def list_versions(self) -> list[str]:
-        """ Returns a list of versions for this project """
+        """Returns a list of versions for this project"""
         branch = basename(self.verseek_head or self.head)
 
         commits = self.git.rev_list(branch)
