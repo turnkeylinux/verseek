@@ -126,7 +126,7 @@ class Plain(Base):
     def _get_version(self) -> str:
         changelogfile = join(self.path, "debian/changelog")
         if not exists(changelogfile):
-            raise VerseekError("no such file or directory `{changelogfile}'")
+            raise VerseekError(f"no such file or directory `{changelogfile}'")
 
         with open(changelogfile) as fob:
             version = parse_changelog(fob.read())
@@ -142,7 +142,9 @@ class Plain(Base):
     def seek_version(self, version: str | None = None) -> None:
         """Attempts to checkout a given version of this project"""
         if version and self._get_version() != version:
-            raise VerseekError(f"can't seek to nonexistent version `{version}'")
+            raise VerseekError(
+                f"can't seek to nonexistent version `{version}'"
+            )
 
 
 class Git(Base):
