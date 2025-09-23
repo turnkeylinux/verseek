@@ -40,8 +40,8 @@ def seek_version(path: str, version: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="List or Seek to a given version of a debian package"
-        "given a path to the source"
+        description="List or seek to a given version of a debian package"
+        " git repo source"
     )
     parser.add_argument(
         "-l",
