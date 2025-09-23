@@ -131,7 +131,7 @@ class Plain(Base):
         with open(changelogfile) as fob:
             version = parse_changelog(fob.read())
         if not version:
-            raise VerseekError("can't parse version from `{changelogfile}'")
+            raise VerseekError(f"can't parse version from `{changelogfile}'")
 
         return version
 
